@@ -10,7 +10,14 @@
 //    double e; // eccentricity
 //};
 
-FVector UOrbitalBlueprintFunctionLibrary::GetOrbitalPosition(double PathFraction, double SemiMajorAxis, double Eccentricity)
+FVector UOrbitalBlueprintFunctionLibrary::GetOrbitalPosition(
+    double PathFraction, 
+    double SemiMajorAxis, 
+    double Eccentricity,
+    double Inclination,               // inclination (degrees)
+    double AscendingNodeLongitude,    // longitude of ascending node (degrees)
+    double PeriapsisArgument          // argument of periapsis (degrees)
+    )
 {
     double M = 2.0 * PI * PathFraction;
 
@@ -33,5 +40,19 @@ FVector UOrbitalBlueprintFunctionLibrary::GetOrbitalPosition(double PathFraction
         sqrt(1.0 - Eccentricity) * (1.0 + cosE)
     );
 
-    return FVector(r * cos(nu), r * sin(nu), 0);
+    
+    double cosO = cos(FMath::DegreesToRadians(AscendingNodeLongitude));
+    double sinO = sin(FMath::DegreesToRadians(AscendingNodeLongitude));
+    double cosi = cos(FMath::DegreesToRadians(Inclination));
+    double sini = sin(FMath::DegreesToRadians(Inclination));
+
+    double cos_wv = cos(FMath::DegreesToRadians(PeriapsisArgument) + nu);
+    double sin_wv = sin(FMath::DegreesToRadians(PeriapsisArgument) + nu);
+
+    double x = r * (cosO * cos_wv - sinO * sin_wv * cosi);
+    double y = r * (sinO * cos_wv + cosO * sin_wv * cosi);
+    double z = r * (sin_wv * sini);
+
+
+    return FVector(x, y, z);
 }
