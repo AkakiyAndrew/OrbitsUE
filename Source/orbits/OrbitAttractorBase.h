@@ -26,7 +26,7 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	FVector GetMassCenterPosition(float TimeOffset) const;
 	UFUNCTION(BlueprintCallable)
 	float GetBodyGM() const;

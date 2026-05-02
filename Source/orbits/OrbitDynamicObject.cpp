@@ -31,7 +31,7 @@ void AOrbitDynamicObject::Tick(float DeltaTime)
 		{
 			if (PredictedPathPoint.IsValidIndex(Count + 1))
 			{
-				DrawDebugLine(GetWorld(), Point, PredictedPathPoint[Count + 1], PreviewLinesColor);
+				DrawDebugLine(GetWorld(), Point, PredictedPathPoint[Count + 1], PreviewLinesColor, false, 3);
 			}
 			Count += 1;
 		}

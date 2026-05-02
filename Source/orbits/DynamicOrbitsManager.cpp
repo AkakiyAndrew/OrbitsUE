@@ -21,11 +21,17 @@ void ADynamicOrbitsManager::BeginPlay()
 	
 	TArray<AActor*> Buf;
 	UGameplayStatics::GetAllActorsOfClass(this, AOrbitDynamicObject::StaticClass(), Buf);
-	DynamicObjects.Append(Buf);
+	for (AActor*& Actor : Buf)
+	{
+		DynamicObjects.Add(Cast<AOrbitDynamicObject>(Actor));
+	}
 	Buf.Empty();
 
 	UGameplayStatics::GetAllActorsOfClass(this, AOrbitAttractorBase::StaticClass(), Buf);
-	Attractors.Append(Buf);
+	for (AActor*& Actor : Buf)
+	{
+		Attractors.Add(Cast<AOrbitAttractorBase>(Actor));
+	}
 	Buf.Empty();
 
 
@@ -55,7 +61,7 @@ void ADynamicOrbitsManager::Tick(float DeltaTime)
 
 	while (TimeAccumulator >= FixedStep)
 	{
-		Step(FixedStep, 0.f);
+		Step(FixedStep, GetWorld()->GetTimeSeconds());
 
 		TimeAccumulator -= FixedStep;
 	}
@@ -100,7 +106,7 @@ FVector ADynamicOrbitsManager::ComputeAcceleration(FVector Position, float Time)
 	{
 		Attractor->GetMassCenterPosition(Time);
 		FVector VectorToAttractor = Attractor->GetActorLocation() - Position;
-		double DistSq = VectorToAttractor.SizeSquared();
+		double DistSq = VectorToAttractor.SquaredLength();
 		double InvDist3 = 1.0 / (FMath::Sqrt(DistSq) * DistSq);
 
 		Acceleration += VectorToAttractor * (Attractor->GetBodyGM() * InvDist3);
