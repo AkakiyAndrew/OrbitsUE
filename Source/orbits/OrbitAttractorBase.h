@@ -19,8 +19,15 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	double GMass;
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	UFUNCTION(BlueprintCallable)
+	FVector GetMassCenterPosition(float TimeOffset) const;
+	UFUNCTION(BlueprintCallable)
+	float GetBodyGM() const;
 };

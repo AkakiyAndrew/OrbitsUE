@@ -23,5 +23,17 @@ void AOrbitDynamicObject::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-}
+	if(ShowPredictedOrbit)
+	{
+		int Count = 0;
 
+		for (FVector& Point : PredictedPathPoint)
+		{
+			if (PredictedPathPoint.IsValidIndex(Count + 1))
+			{
+				DrawDebugLine(GetWorld(), Point, PredictedPathPoint[Count + 1], PreviewLinesColor);
+			}
+			Count += 1;
+		}
+	}
+}

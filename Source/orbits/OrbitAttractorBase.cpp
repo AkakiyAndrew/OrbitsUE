@@ -25,3 +25,12 @@ void AOrbitAttractorBase::Tick(float DeltaTime)
 
 }
 
+FVector AOrbitAttractorBase::GetMassCenterPosition(float TimeOffset) const
+{
+	return GetActorLocation();
+}
+
+float AOrbitAttractorBase::GetBodyGM() const
+{
+	return GMass;
+}

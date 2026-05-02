@@ -22,5 +22,13 @@ protected:
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
-
+	
+	UPROPERTY(VisibleAnywhere)
+	FVector Velocity;
+	UPROPERTY(EditAnywhere)
+	bool ShowPredictedOrbit = false;
+	UPROPERTY(EditAnywhere)
+	FColor PreviewLinesColor = FColor::Black;
+	TArray<FVector> PredictedPathPoint; // TODO: remake as TList for quicker removal??
+	FVector LastPredictedVelocity;
 };
