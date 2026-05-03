@@ -21,6 +21,7 @@ public:
 private:
 	UPROPERTY()
 	float TimeAccumulator = 0.f;
+	double TimePassed = 0.;
 	TArray<AOrbitAttractorBase*> Attractors;
 	TArray<AOrbitDynamicObject*> DynamicObjects;
 	
@@ -29,11 +30,11 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditInstanceOnly)
 	float TimeScale = 1.f;
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditInstanceOnly)
 	float FixedStep = 0.02f;
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditAnywhere)
 	int32 PreviewSteps = 100;
 
 public:	
@@ -41,8 +42,9 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	UFUNCTION(BlueprintCallable)
-	FVector ComputeAcceleration(FVector Position, float Time = 0);
-	UFUNCTION(BlueprintCallable)
 	void Step(float TimeDelta, float Time);
-	void ComputeStep(FVector &BodyPosition, FVector &BodyVelocity, float TimeDelta, float Time);
+	UFUNCTION(BlueprintCallable)
+	void ComputeStep(FVector &BodyPosition, FVector &BodyVelocity, float TimeDelta, float Time, bool DoLog=true);
+	UFUNCTION(BlueprintCallable)
+	FVector ComputeAcceleration(FVector Position, float Time = 0, bool DoLog=true);
 };
