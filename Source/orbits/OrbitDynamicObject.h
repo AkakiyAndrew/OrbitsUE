@@ -35,4 +35,5 @@ public:
 	FColor PreviewLinesColor = FColor::Black;
 	TArray<FVector> PredictedPathPoint; // TODO: remake as TList for quicker removal??
 	FVector LastPredictedVelocity;
+	double LastPredictedSimTime = 0.;
 };
