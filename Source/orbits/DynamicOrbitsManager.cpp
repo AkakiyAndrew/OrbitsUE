@@ -5,6 +5,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "OrbitDynamicObject.h"
 #include "OrbitAttractorBase.h"
+#include "OrbitAttractorKepler.h"
 
 // Sets default values
 ADynamicOrbitsManager::ADynamicOrbitsManager()
@@ -70,6 +71,16 @@ void ADynamicOrbitsManager::Tick(float DeltaTime)
 	while (TimeAccumulator > FixedStep)
 	{
 		Step(FixedStep, TimePassed);
+		
+		for (AOrbitAttractorBase*& Attractor: Attractors)
+		{
+			AOrbitAttractorKepler* OrbitingAttractor = Cast<AOrbitAttractorKepler>(Attractor);
+			if (OrbitingAttractor)
+			{
+				OrbitingAttractor->UpdateOrbitalPosition(TimePassed);
+			}
+		}
+		
 		TimePassed += FixedStep;
 		TimeAccumulator -= FixedStep;
 	}

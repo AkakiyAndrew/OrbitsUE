@@ -7,7 +7,7 @@
 AOrbitAttractorBase::AOrbitAttractorBase()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 }
 
 // Called when the game starts or when spawned
@@ -30,7 +30,7 @@ void AOrbitAttractorBase::Tick(float DeltaTime)
 
 }
 
-FVector AOrbitAttractorBase::GetMassCenterPosition_Implementation(float TimeOffset) const
+FVector AOrbitAttractorBase::GetMassCenterPosition_Implementation(double SimTime) const
 {
 	return OrbitalPosition;
 }

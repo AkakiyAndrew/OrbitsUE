@@ -29,8 +29,8 @@ public:
 
 	FVector OrbitalPosition;
 
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
-	FVector GetMassCenterPosition(float TimeOffset) const;
+	UFUNCTION(BlueprintNativeEvent)
+	FVector GetMassCenterPosition(double SimTime) const;
 	UFUNCTION(BlueprintCallable)
 	float GetBodyGM() const;
 };
