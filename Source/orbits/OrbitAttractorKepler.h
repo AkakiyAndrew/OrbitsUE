@@ -7,6 +7,7 @@
 #include "OrbitAttractorKepler.generated.h"
 
 class USplineComponent;
+class USplineMeshComponent;
 
 UCLASS()
 class ORBITS_API AOrbitAttractorKepler : public AOrbitAttractorBase
@@ -56,9 +57,21 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Orbit Visuals")
 	UStaticMesh* SplineSectionMesh;
 
+
 private:
 	// TODO: calc this somehow, from SemiMajorAxis??
 	double OrbitalPeriod;
+
+	bool bSplineMeshesSetUp = false;
+
+	void SplineMeshesSetUp();
+
+	UPROPERTY()
+	TArray<TObjectPtr<USplineMeshComponent>> SplineMeshes;
+
+protected:
+	virtual void PostInitializeComponents() override;
+	virtual void BeginPlay() override;
 
 public:
 	AOrbitAttractorKepler();
@@ -70,5 +83,5 @@ public:
 	// To call from Manager's Tick
 	void UpdateOrbitalPosition(double SimTime);
 
-	virtual FVector GetMassCenterPosition_Implementation(double SimTime) const override;
+	virtual FVector GetMassCenterPosition(double SimTime) const override;
 };

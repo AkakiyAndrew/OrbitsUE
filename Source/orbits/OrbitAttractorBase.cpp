@@ -30,7 +30,7 @@ void AOrbitAttractorBase::Tick(float DeltaTime)
 
 }
 
-FVector AOrbitAttractorBase::GetMassCenterPosition_Implementation(double SimTime) const
+FVector AOrbitAttractorBase::GetMassCenterPosition(double SimTime) const
 {
 	return OrbitalPosition;
 }

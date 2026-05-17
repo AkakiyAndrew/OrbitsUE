@@ -161,6 +161,7 @@ FVector ADynamicOrbitsManager::ComputeAcceleration(FVector Position, double Time
 	for (AOrbitAttractorBase*& Attractor : Attractors)
 	{
 		FVector AttractorPosition = Attractor->GetMassCenterPosition(Time);
+		DrawDebugSphere(GetWorld(), AttractorPosition, 30, 10, FColor::Purple);
 		FVector VectorToAttractor = AttractorPosition - Position;
 		double DistSq = VectorToAttractor.SquaredLength();
 		double InvDist3 = 1.0 / (FMath::Sqrt(DistSq) * DistSq);
