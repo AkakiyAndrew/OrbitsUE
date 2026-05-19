@@ -24,16 +24,14 @@ AOrbitAttractorKepler::AOrbitAttractorKepler()
 void AOrbitAttractorKepler::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
+	if(ParentObject)
+		OrbitalPeriod = 2 * UE_DOUBLE_PI * FMath::Sqrt(FMath::Pow(SemiMajorAxis, 3) / (ParentObject->GetBodyGM() + GetBodyGM()));
 }
 
 void AOrbitAttractorKepler::BeginPlay()
 {
 	Super::BeginPlay();
-	OrbitalPeriod = 2 * UE_DOUBLE_PI * FMath::Sqrt(FMath::Pow(SemiMajorAxis, 3) / (ParentObject->GetBodyGM() + GetBodyGM()));
-}
-
-void AOrbitAttractorKepler::OnConstruction(const FTransform& Transform)
-{
+	
 	if (!bSplineMeshesSetUp)
 	{
 		SplineMeshes.Empty();
@@ -41,8 +39,11 @@ void AOrbitAttractorKepler::OnConstruction(const FTransform& Transform)
 		SplineMeshesSetUp();
 
 	}
-
 	UpdateOrbit();
+}
+
+void AOrbitAttractorKepler::OnConstruction(const FTransform& Transform)
+{
 }
 
 void AOrbitAttractorKepler::SplineMeshesSetUp()
@@ -125,22 +126,22 @@ void AOrbitAttractorKepler::UpdateOrbit()
 	SplineMaterialInstance->SetScalarParameterValue(TEXT("BandWidth"), SplineBandWidth);
 	SplineMaterialInstance->SetScalarParameterValue(TEXT("Opacity"), SplineOpacity);
 
-	// TODO: repurpose already created components?
-
-	int32 PointCounter = 0;
+	// repurpose already created components
 	for (int32 PointIndex = 0; PointIndex < SplineOrbitPointsCount; PointIndex++)
 	{
-		// Set the static mesh and mobility
+		if (!SplineMeshes[PointIndex])
+			continue;
+
+		// set the mesh material
 		SplineMeshes[PointIndex]->SetStaticMesh(SplineSectionMesh);
 		SplineMeshes[PointIndex]->SetMaterial(0, SplineMaterialInstance);
 
-		// Define Start and End points/tangents
+		// Start and End points/tangents
 		FVector StartPos, StartTangent, EndPos, EndTangent;
-		OrbitSplinePath->GetLocationAndTangentAtSplinePoint(PointCounter, StartPos, StartTangent, ESplineCoordinateSpace::Local);
-		OrbitSplinePath->GetLocationAndTangentAtSplinePoint(PointCounter + 1, EndPos, EndTangent, ESplineCoordinateSpace::Local);
+		OrbitSplinePath->GetLocationAndTangentAtSplinePoint(PointIndex, StartPos, StartTangent, ESplineCoordinateSpace::Local);
+		OrbitSplinePath->GetLocationAndTangentAtSplinePoint(PointIndex + 1, EndPos, EndTangent, ESplineCoordinateSpace::Local);
 
 		SplineMeshes[PointIndex]->SetStartAndEnd(StartPos, StartTangent, EndPos, EndTangent, true);
-		PointCounter += 1;
 	}
 
 	UpdateOrbitalPosition(0.);

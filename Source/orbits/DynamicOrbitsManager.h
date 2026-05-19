@@ -47,4 +47,7 @@ public:
 	void ComputeStep(FVector &BodyPosition, FVector &BodyVelocity, double TimeDelta, double Time, bool DoLog=true);
 	UFUNCTION(BlueprintCallable)
 	FVector ComputeAcceleration(FVector Position, double Time = 0, bool DoLog=true);
+
+	UFUNCTION(BlueprintCallable, Category = "Orbital Manager")
+	void SetTimeScale(double NewTimeScale) { TimeScale = NewTimeScale; };
 };
