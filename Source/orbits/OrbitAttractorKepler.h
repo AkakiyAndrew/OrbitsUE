@@ -20,54 +20,28 @@ protected:
 	TObjectPtr<USceneComponent> Root;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UStaticMeshComponent> OrbitingBody;
-	UPROPERTY()
-	TObjectPtr<USplineComponent> OrbitSplinePath;
 
 	// Orbital
-	UPROPERTY(EditAnywhere, Category = "Orbital|Orbit Params")
+	UPROPERTY(EditAnywhere, Category = "Orbital|Orbit Params", meta = (ClampMin = "0", ClampMax = "1"))
 	float Eccentrity = 0.f;
-	UPROPERTY(EditAnywhere, Category = "Orbital|Orbit Params")
+	UPROPERTY(EditAnywhere, Category = "Orbital|Orbit Params", meta = (ClampMin = "0", ClampMax = "1"))
 	float StartingOffset = 0.f;
-	UPROPERTY(EditAnywhere, Category = "Orbital|Orbit Params")
+	UPROPERTY(EditAnywhere, Category = "Orbital|Orbit Params", meta = (ClampMin = "0", ClampMax = "180"))
 	float Inclination = 0.f;
-	UPROPERTY(EditAnywhere, Category = "Orbital|Orbit Params")
+	UPROPERTY(EditAnywhere, Category = "Orbital|Orbit Params", meta = (ClampMin = "0", ClampMax = "360"))
 	float AscendingNode = 0.f;
-	UPROPERTY(EditAnywhere, Category = "Orbital|Orbit Params")
+	UPROPERTY(EditAnywhere, Category = "Orbital|Orbit Params", meta = (ClampMin = "0", ClampMax = "180"))
 	float PeriapsisArgument = 0.f;
-	UPROPERTY(EditAnywhere, Category = "Orbital|Orbit Params")
+	UPROPERTY(EditAnywhere, Category = "Orbital|Orbit Params", meta = (ClampMin = "1"))
 	float SemiMajorAxis = 0.f;
 	UPROPERTY(EditAnywhere, Category = "Orbital|Orbit Params")
 	TObjectPtr<AOrbitAttractorBase> ParentObject = nullptr;
-	UPROPERTY(EditAnywhere, Category = "Orbital|Orbit Params")
-	int32 SplineOrbitPointsCount = 0;
 
 	TArray<FVector> CreateOrbitPoints();
-
-	// Spline Visuals
-	UPROPERTY(EditAnywhere, Category = "Orbit Visuals")
-	float SplineGlow = 0.f;
-	UPROPERTY(EditAnywhere, Category = "Orbit Visuals")
-	float SplineBandWidth = 0.f;
-	UPROPERTY(EditAnywhere, Category = "Orbit Visuals")
-	float SplineOpacity = 0.f;
-	UPROPERTY(EditAnywhere, Category = "Orbit Visuals")
-	FLinearColor SplineColor;
-	UPROPERTY(EditAnywhere, Category = "Orbit Visuals")
-	UMaterial* SplineMaterial;
-	UPROPERTY(EditAnywhere, Category = "Orbit Visuals")
-	UStaticMesh* SplineSectionMesh;
-
 
 private:
 	// TODO: calc this somehow, from SemiMajorAxis??
 	double OrbitalPeriod;
-
-	bool bSplineMeshesSetUp = false;
-
-	void SplineMeshesSetUp();
-
-	UPROPERTY()
-	TArray<TObjectPtr<USplineMeshComponent>> SplineMeshes;
 
 protected:
 	virtual void PostInitializeComponents() override;
@@ -75,7 +49,7 @@ protected:
 
 public:
 	AOrbitAttractorKepler();
-	virtual void OnConstruction(const FTransform& Transform) override;
+	//virtual void OnConstruction(const FTransform& Transform) override;
 
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "Orbital")
 	void UpdateOrbit();

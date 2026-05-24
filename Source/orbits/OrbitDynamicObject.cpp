@@ -2,6 +2,8 @@
 
 
 #include "OrbitDynamicObject.h"
+#include "Components/SplineComponent.h"
+#include "Components/SplineMeshComponent.h"
 
 // Sets default values
 AOrbitDynamicObject::AOrbitDynamicObject()
@@ -28,17 +30,70 @@ void AOrbitDynamicObject::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if(ShowPredictedOrbit)
-	{
-		int Count = 0;
+	//if(ShowPredictedOrbit)
+	//{
+	//	int Count = 0;
+	//	for (FVector& Point : PredictedPathPoint)
+	//	{
+	//		if (PredictedPathPoint.IsValidIndex(Count + 1))
+	//		{
+	//			DrawDebugLine(GetWorld(), Point, PredictedPathPoint[Count + 1], PreviewLinesColor, false);
+	//		}
+	//		Count += 1;
+	//	}
+	//}
+}
 
-		for (FVector& Point : PredictedPathPoint)
-		{
-			if (PredictedPathPoint.IsValidIndex(Count + 1))
-			{
-				DrawDebugLine(GetWorld(), Point, PredictedPathPoint[Count + 1], PreviewLinesColor, false);
-			}
-			Count += 1;
-		}
+void AOrbitDynamicObject::TogglePredictPathVisibility(bool Show)
+{
+	PredictionSplinePath->SetVisibility(Show);
+}
+
+void AOrbitDynamicObject::AppendPredictionPoint(FVector NewPoint)
+{
+	PredictedPathPoint.Add(NewPoint);
+	CurrentPathPointsCount += 1;
+
+	if (CurrentPathPointsCount > SplineOrbitPointsCount)
+	{
+		// remove last point, if there's too many already
+		PredictedPathPoint.RemoveAt(0);
+		CurrentPathPointsCount -= 1;
 	}
+	//PathPoints.Next
+
+
+	// TODO: spline meshes spawn at begin play/init??
+	// 
+	// TODO: remove PredictedPathPoint array, replace with spline points - or not?
+	// TODO: add new spline point, remove the last
+	// OR
+	// keep array, update spline meshes?
+}
+
+void AOrbitDynamicObject::UpdatePredictionSpline()
+{
+	if (CurrentPathPointsCount != SplineOrbitPointsCount)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Prediction spline not fully populated for an update. Owner: %s"), *GetDebugName(this));
+		return;
+	}
+
+	PredictionSplinePath->SetSplinePoints(PredictedPathPoint, ESplineCoordinateSpace::World, true);
+
+	// repurpose already created components
+	for (int32 PointIndex = 0; PointIndex < SplineOrbitPointsCount; PointIndex++)
+	{
+		if (!SplineMeshes[PointIndex])
+			continue;
+
+		// Start and End points/tangents
+		FVector StartPos, StartTangent, EndPos, EndTangent;
+		PredictionSplinePath->GetLocationAndTangentAtSplinePoint(PointIndex, StartPos, StartTangent, ESplineCoordinateSpace::Local);
+		PredictionSplinePath->GetLocationAndTangentAtSplinePoint(PointIndex + 1, EndPos, EndTangent, ESplineCoordinateSpace::Local);
+
+		SplineMeshes[PointIndex]->SetStartAndEnd(StartPos, StartTangent, EndPos, EndTangent, true);
+	}
+
+	PredictionSplinePath->UpdateSpline();
 }

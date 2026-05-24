@@ -16,8 +16,7 @@ AOrbitAttractorKepler::AOrbitAttractorKepler()
 
 	OrbitingBody = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("OrbitingBody"));
 
-	OrbitSplinePath = CreateDefaultSubobject<USplineComponent>(TEXT("OrbitSpline"));
-	OrbitSplinePath->SetClosedLoop(true);
+	PredictionSplinePath->SetClosedLoop(true);
 }
 
 
@@ -42,37 +41,9 @@ void AOrbitAttractorKepler::BeginPlay()
 	UpdateOrbit();
 }
 
-void AOrbitAttractorKepler::OnConstruction(const FTransform& Transform)
-{
-}
-
-void AOrbitAttractorKepler::SplineMeshesSetUp()
-{
-	for (USplineMeshComponent* MeshComp : SplineMeshes)
-	{
-		if (MeshComp)
-		{
-			MeshComp->DestroyComponent();
-		}
-	}
-
-	SplineMeshes.SetNum(SplineOrbitPointsCount);
-
-	for (int32 i = 0; i < SplineOrbitPointsCount; i++)
-	{
-		USplineMeshComponent* SplineMesh = NewObject<USplineMeshComponent>(this);
-		SplineMesh->SetMobility(EComponentMobility::Static);
-
-		// Register and attach
-		SplineMesh->CreationMethod = EComponentCreationMethod::UserConstructionScript;
-		SplineMesh->RegisterComponent();
-		SplineMesh->AttachToComponent(OrbitSplinePath, FAttachmentTransformRules::KeepRelativeTransform);
-
-		SplineMeshes[i] = SplineMesh;
-	}
-
-	bSplineMeshesSetUp = true;
-}
+//void AOrbitAttractorKepler::OnConstruction(const FTransform& Transform)
+//{
+//}
 
 TArray<FVector> AOrbitAttractorKepler::CreateOrbitPoints()
 {
@@ -117,29 +88,20 @@ void AOrbitAttractorKepler::UpdateOrbit()
 		SplineMeshesSetUp();
 	}
 
-
 	SetActorLocation(ParentObject->GetMassCenterPosition(0.f));
-	OrbitSplinePath->SetSplinePoints(OrbitPathPoints, ESplineCoordinateSpace::World, true);
-	UMaterialInstanceDynamic* SplineMaterialInstance = UKismetMaterialLibrary::CreateDynamicMaterialInstance(this, SplineMaterial);
-	SplineMaterialInstance->SetVectorParameterValue(TEXT("Colour"), SplineColor);
-	SplineMaterialInstance->SetScalarParameterValue(TEXT("Glow"), SplineGlow);
-	SplineMaterialInstance->SetScalarParameterValue(TEXT("BandWidth"), SplineBandWidth);
-	SplineMaterialInstance->SetScalarParameterValue(TEXT("Opacity"), SplineOpacity);
+
+	PredictionSplinePath->SetSplinePoints(OrbitPathPoints, ESplineCoordinateSpace::World, true);
 
 	// repurpose already created components
 	for (int32 PointIndex = 0; PointIndex < SplineOrbitPointsCount; PointIndex++)
 	{
 		if (!SplineMeshes[PointIndex])
 			continue;
-
-		// set the mesh material
-		SplineMeshes[PointIndex]->SetStaticMesh(SplineSectionMesh);
-		SplineMeshes[PointIndex]->SetMaterial(0, SplineMaterialInstance);
-
+		
 		// Start and End points/tangents
 		FVector StartPos, StartTangent, EndPos, EndTangent;
-		OrbitSplinePath->GetLocationAndTangentAtSplinePoint(PointIndex, StartPos, StartTangent, ESplineCoordinateSpace::Local);
-		OrbitSplinePath->GetLocationAndTangentAtSplinePoint(PointIndex + 1, EndPos, EndTangent, ESplineCoordinateSpace::Local);
+		PredictionSplinePath->GetLocationAndTangentAtSplinePoint(PointIndex, StartPos, StartTangent, ESplineCoordinateSpace::Local);
+		PredictionSplinePath->GetLocationAndTangentAtSplinePoint(PointIndex + 1, EndPos, EndTangent, ESplineCoordinateSpace::Local);
 
 		SplineMeshes[PointIndex]->SetStartAndEnd(StartPos, StartTangent, EndPos, EndTangent, true);
 	}
@@ -156,5 +118,5 @@ void AOrbitAttractorKepler::UpdateOrbitalPosition(double SimTime)
 FVector AOrbitAttractorKepler::GetMassCenterPosition(double SimTime) const
 {
 	//UE_LOG(LogTemp, Log, TEXT("MassCenter, FMod: %f, Period: %f, SimTime: %f."), FMath::Fmod(SimTime, OrbitalPeriod), OrbitalPeriod, SimTime);
-	return OrbitSplinePath->GetLocationAtTime(FMath::Fmod(SimTime, OrbitalPeriod) / OrbitalPeriod, ESplineCoordinateSpace::Local);;
+	return PredictionSplinePath->GetLocationAtTime(StartingOffset + (FMath::Fmod(SimTime, OrbitalPeriod) / OrbitalPeriod), ESplineCoordinateSpace::Local);;
 }

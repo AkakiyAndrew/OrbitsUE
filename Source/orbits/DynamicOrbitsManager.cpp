@@ -43,19 +43,18 @@ void ADynamicOrbitsManager::BeginPlay()
 		FVector TempBodyPosition = Body->OrbitalPosition;
 		FVector TempBodyVelocity = Body->Velocity;
 		
-		Body->PredictedPathPoint.Add(TempBodyPosition); // TODO: needed or not?
+		Body->AppendPredictionPoint(TempBodyPosition);
+		//Body->PredictedPathPoint.Add(TempBodyPosition); // TODO: needed or not?
 
-		for (int32 PredictStepCounter = 0; PredictStepCounter < PreviewSteps; PredictStepCounter++)
+		for (int32 PredictStepCounter = 0; PredictStepCounter < Body->GetSplinePointsCount(); PredictStepCounter++)
 		{
 			ComputeStep(TempBodyPosition, TempBodyVelocity, FixedStep, Time);
-			Body->PredictedPathPoint.Add(TempBodyPosition);
-			//UE_LOG(LogTemp, Log, TEXT("Predicted Pos: %s"), *TempBodyPosition.ToString());
-
+			Body->AppendPredictionPoint(TempBodyPosition);
+			//Body->PredictedPathPoint.Add(TempBodyPosition);
 			Time += FixedStep;
-			//if (PredictStepCounter == PreviewSteps - 1)
-			//{
-			//}
+			//UE_LOG(LogTemp, Log, TEXT("Predicted Pos: %s"), *TempBodyPosition.ToString());
 		}
+		Body->UpdatePredictionSpline();
 		Body->LastPredictedVelocity = TempBodyVelocity;
 		Body->LastPredictedSimTime = Time;
 	}
@@ -115,11 +114,13 @@ void ADynamicOrbitsManager::Step(double TimeDelta, double Time)
 		Body->Velocity = Velocity;
 
 		// remove oldest predicted point and predict new one, from last position
-		FVector LastPoint = Body->PredictedPathPoint[PreviewSteps];
+		FVector LastPoint = Body->GetLastPredictedPoint();
 		double LastTimePrediction = Body->LastPredictedSimTime; // TODO: wrong prediction time (save in body?)
 		ComputeStep(LastPoint, Body->LastPredictedVelocity, FixedStep, LastTimePrediction, false);
-		Body->PredictedPathPoint.RemoveAt(0);
-		Body->PredictedPathPoint.Add(LastPoint);
+		//Body->PredictedPathPoint.RemoveAt(0);
+		//Body->PredictedPathPoint.Add(LastPoint);
+		Body->AppendPredictionPoint(LastPoint);
+		Body->UpdatePredictionSpline();
 		Body->LastPredictedSimTime = LastTimePrediction + FixedStep;
 	}
 }

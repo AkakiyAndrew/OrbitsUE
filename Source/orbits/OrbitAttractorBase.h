@@ -3,11 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
+#include "OrbitalBase.h"
 #include "OrbitAttractorBase.generated.h"
 
 UCLASS()
-class ORBITS_API AOrbitAttractorBase : public AActor
+class ORBITS_API AOrbitAttractorBase : public AOrbitalBase
 {
 	GENERATED_BODY()
 	
@@ -20,7 +20,7 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void PostInitializeComponents();
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	double GMass;
 
 public:	
