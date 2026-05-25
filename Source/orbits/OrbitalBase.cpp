@@ -12,6 +12,9 @@ AOrbitalBase::AOrbitalBase()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
+	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
+	SetRootComponent(Root);
+
 	PredictionSplinePath = CreateDefaultSubobject<USplineComponent>(TEXT("OrbitSpline"));
 }
 
@@ -41,15 +44,15 @@ void AOrbitalBase::SplineMeshesSetUp()
 	// set up mesh material instance
 	if(!SplineMaterialInstance)
 	{
-		SplineMaterialInstance = UKismetMaterialLibrary::CreateDynamicMaterialInstance(this, SplineMaterial);
+		SplineMaterialInstance = UKismetMaterialLibrary::CreateDynamicMaterialInstance(this, SplineVisuals.SplineMaterial);
 	}
 
 	if(SplineMaterialInstance)
 	{
-		SplineMaterialInstance->SetVectorParameterValue(TEXT("Colour"), SplineColor);
-		SplineMaterialInstance->SetScalarParameterValue(TEXT("Glow"), SplineGlow);
-		SplineMaterialInstance->SetScalarParameterValue(TEXT("BandWidth"), SplineBandWidth);
-		SplineMaterialInstance->SetScalarParameterValue(TEXT("Opacity"), SplineOpacity);
+		SplineMaterialInstance->SetVectorParameterValue(TEXT("Colour"), SplineVisuals.SplineColor);
+		SplineMaterialInstance->SetScalarParameterValue(TEXT("Glow"), SplineVisuals.SplineGlow);
+		SplineMaterialInstance->SetScalarParameterValue(TEXT("BandWidth"), SplineVisuals.SplineBandWidth);
+		SplineMaterialInstance->SetScalarParameterValue(TEXT("Opacity"), SplineVisuals.SplineOpacity);
 	}
 
 
@@ -74,7 +77,7 @@ void AOrbitalBase::SplineMeshesSetUp()
 		SplineMesh->RegisterComponent();
 		SplineMesh->AttachToComponent(PredictionSplinePath, FAttachmentTransformRules::KeepRelativeTransform);
 
-		SplineMesh->SetStaticMesh(SplineSectionMesh);
+		SplineMesh->SetStaticMesh(SplineVisuals.SplineSectionMesh);
 		if(SplineMaterialInstance)
 		{
 			SplineMesh->SetMaterial(0, SplineMaterialInstance);

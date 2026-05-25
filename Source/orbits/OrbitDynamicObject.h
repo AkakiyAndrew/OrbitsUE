@@ -6,8 +6,6 @@
 #include "OrbitalBase.h"
 #include "OrbitDynamicObject.generated.h"
 
-class USplineComponent;
-
 UCLASS()
 class ORBITS_API AOrbitDynamicObject : public AOrbitalBase
 {

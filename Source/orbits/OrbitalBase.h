@@ -6,6 +6,25 @@
 #include "GameFramework/Actor.h"
 #include "OrbitalBase.generated.h"
 
+USTRUCT(BlueprintType)
+struct FSplineVisuals
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "Orbit Visuals")
+	float SplineGlow = 30.f;
+	UPROPERTY(EditAnywhere, Category = "Orbit Visuals")
+	float SplineBandWidth = 0.40f;
+	UPROPERTY(EditAnywhere, Category = "Orbit Visuals")
+	float SplineOpacity = 0.2f;
+	UPROPERTY(EditAnywhere, Category = "Orbit Visuals")
+	FLinearColor SplineColor;
+	UPROPERTY(EditAnywhere, Category = "Orbit Visuals")
+	UMaterial* SplineMaterial;
+	UPROPERTY(EditAnywhere, Category = "Orbit Visuals")
+	UStaticMesh* SplineSectionMesh;
+};
+
 class USplineComponent;
 class USplineMeshComponent;
 class UMaterialInstanceDynamic;
@@ -20,23 +39,14 @@ public:
 	AOrbitalBase();
 
 protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	TObjectPtr<USceneComponent> Root;
 	// Prediction Spline Visuals
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	TObjectPtr<USplineComponent> PredictionSplinePath;
 
-	UPROPERTY(EditAnywhere, Category = "Orbit Visuals")
-	float SplineGlow = 30.f;
-	UPROPERTY(EditAnywhere, Category = "Orbit Visuals")
-	float SplineBandWidth = 0.40f;
-	UPROPERTY(EditAnywhere, Category = "Orbit Visuals")
-	float SplineOpacity = 0.2f;
-	UPROPERTY(EditAnywhere, Category = "Orbit Visuals")
-	FLinearColor SplineColor;
-	UPROPERTY(EditAnywhere, Category = "Orbit Visuals")
-	UMaterial* SplineMaterial;
-	UPROPERTY(EditAnywhere, Category = "Orbit Visuals")
-	UStaticMesh* SplineSectionMesh;
-	
+	UPROPERTY(EditAnywhere)
+	FSplineVisuals SplineVisuals;
 	UPROPERTY(EditAnywhere, Category = "Orbital|Orbit Params", meta = (ClampMin = "0"))
 	int32 SplineOrbitPointsCount = 0;
 

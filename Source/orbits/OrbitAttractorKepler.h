@@ -6,6 +6,28 @@
 #include "OrbitAttractorBase.h"
 #include "OrbitAttractorKepler.generated.h"
 
+USTRUCT(BlueprintType)
+struct FOrbitalParameters
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "Orbit Params", meta = (ClampMin = "0", ClampMax = "1"))
+	float Eccentrity = 0.f;
+	UPROPERTY(EditAnywhere, Category = "Orbit Params", meta = (ClampMin = "0", ClampMax = "1"))
+	float StartingOffset = 0.f;
+	UPROPERTY(EditAnywhere, Category = "Orbit Params", meta = (ClampMin = "0", ClampMax = "180"))
+	float Inclination = 0.f;
+	UPROPERTY(EditAnywhere, Category = "Orbit Params", meta = (ClampMin = "0", ClampMax = "360"))
+	float AscendingNode = 0.f;
+	UPROPERTY(EditAnywhere, Category = "Orbit Params", meta = (ClampMin = "0", ClampMax = "180"))
+	float PeriapsisArgument = 0.f;
+	UPROPERTY(EditAnywhere, Category = "Orbit Params", meta = (ClampMin = "1"))
+	float SemiMajorAxis = 1000.f;
+
+	UPROPERTY(EditAnywhere, Category = "Orbit Params")
+	TObjectPtr<AOrbitAttractorBase> ParentObject = nullptr;
+};
+
 class USplineComponent;
 class USplineMeshComponent;
 
@@ -14,31 +36,15 @@ class ORBITS_API AOrbitAttractorKepler : public AOrbitAttractorBase
 {
 	GENERATED_BODY()
 	
-
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	TObjectPtr<USceneComponent> Root;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UStaticMeshComponent> OrbitingBody;
-
+	
 	// Orbital
-	UPROPERTY(EditAnywhere, Category = "Orbital|Orbit Params", meta = (ClampMin = "0", ClampMax = "1"))
-	float Eccentrity = 0.f;
-	UPROPERTY(EditAnywhere, Category = "Orbital|Orbit Params", meta = (ClampMin = "0", ClampMax = "1"))
-	float StartingOffset = 0.f;
-	UPROPERTY(EditAnywhere, Category = "Orbital|Orbit Params", meta = (ClampMin = "0", ClampMax = "180"))
-	float Inclination = 0.f;
-	UPROPERTY(EditAnywhere, Category = "Orbital|Orbit Params", meta = (ClampMin = "0", ClampMax = "360"))
-	float AscendingNode = 0.f;
-	UPROPERTY(EditAnywhere, Category = "Orbital|Orbit Params", meta = (ClampMin = "0", ClampMax = "180"))
-	float PeriapsisArgument = 0.f;
-	UPROPERTY(EditAnywhere, Category = "Orbital|Orbit Params", meta = (ClampMin = "1"))
-	float SemiMajorAxis = 0.f;
-	UPROPERTY(EditAnywhere, Category = "Orbital|Orbit Params")
-	TObjectPtr<AOrbitAttractorBase> ParentObject = nullptr;
-
+	UPROPERTY(EditAnywhere, Category = "Orbital")
+	FOrbitalParameters OrbitalParameters;
 	TArray<FVector> CreateOrbitPoints();
-
+	
 private:
 	// TODO: calc this somehow, from SemiMajorAxis??
 	double OrbitalPeriod;
