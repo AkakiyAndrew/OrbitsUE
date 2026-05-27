@@ -60,8 +60,6 @@ void AOrbitDynamicObject::AppendPredictionPoint(FVector NewPoint)
 		PredictedPathPoint.RemoveAt(0);
 		CurrentPathPointsCount -= 1;
 	}
-	//PathPoints.Next
-
 
 	// TODO: spline meshes spawn at begin play/init??
 	// 
@@ -79,21 +77,23 @@ void AOrbitDynamicObject::UpdatePredictionSpline()
 		return;
 	}
 
-	PredictionSplinePath->SetSplinePoints(PredictedPathPoint, ESplineCoordinateSpace::World, true);
+	OnPredictionUpdate.Broadcast();
 
-	// repurpose already created components
-	for (int32 PointIndex = 0; PointIndex < SplineOrbitPointsCount; PointIndex++)
-	{
-		if (!SplineMeshes[PointIndex])
-			continue;
+	//PredictionSplinePath->SetSplinePoints(PredictedPathPoint, ESplineCoordinateSpace::World, true);
 
-		// Start and End points/tangents
-		FVector StartPos, StartTangent, EndPos, EndTangent;
-		PredictionSplinePath->GetLocationAndTangentAtSplinePoint(PointIndex, StartPos, StartTangent, ESplineCoordinateSpace::Local);
-		PredictionSplinePath->GetLocationAndTangentAtSplinePoint(PointIndex + 1, EndPos, EndTangent, ESplineCoordinateSpace::Local);
+	//// repurpose already created components
+	//for (int32 PointIndex = 0; PointIndex < SplineOrbitPointsCount; PointIndex++)
+	//{
+	//	if (!SplineMeshes[PointIndex])
+	//		continue;
 
-		SplineMeshes[PointIndex]->SetStartAndEnd(StartPos, StartTangent, EndPos, EndTangent, true);
-	}
+	//	// Start and End points/tangents
+	//	FVector StartPos, StartTangent, EndPos, EndTangent;
+	//	PredictionSplinePath->GetLocationAndTangentAtSplinePoint(PointIndex, StartPos, StartTangent, ESplineCoordinateSpace::Local);
+	//	PredictionSplinePath->GetLocationAndTangentAtSplinePoint(PointIndex + 1, EndPos, EndTangent, ESplineCoordinateSpace::Local);
 
-	PredictionSplinePath->UpdateSpline();
+	//	SplineMeshes[PointIndex]->SetStartAndEnd(StartPos, StartTangent, EndPos, EndTangent, true);
+	//}
+
+	//PredictionSplinePath->UpdateSpline();
 }

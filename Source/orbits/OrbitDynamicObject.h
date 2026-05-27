@@ -6,6 +6,8 @@
 #include "OrbitalBase.h"
 #include "OrbitDynamicObject.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FPredictionUpdate);
+
 UCLASS()
 class ORBITS_API AOrbitDynamicObject : public AOrbitalBase
 {
@@ -47,4 +49,10 @@ public:
 	void AppendPredictionPoint(FVector NewPoint);
 	FVector GetLastPredictedPoint() const { return PredictedPathPoint[CurrentPathPointsCount - 1]; };
 	void UpdatePredictionSpline();
+
+	UPROPERTY(BlueprintAssignable, Category = "Orbital")
+	FPredictionUpdate OnPredictionUpdate;
+
+	UFUNCTION(BlueprintCallable)
+	TArray<FVector> GetPredictionPoints() const { return PredictedPathPoint; };
 };
