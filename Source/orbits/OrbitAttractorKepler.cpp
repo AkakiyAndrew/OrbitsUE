@@ -117,5 +117,13 @@ void AOrbitAttractorKepler::UpdateOrbitalPosition(double SimTime)
 FVector AOrbitAttractorKepler::GetMassCenterPosition(double SimTime) const
 {
 	//UE_LOG(LogTemp, Log, TEXT("MassCenter, FMod: %f, Period: %f, SimTime: %f."), FMath::Fmod(SimTime, OrbitalPeriod), OrbitalPeriod, SimTime);
-	return PredictionSplinePath->GetLocationAtTime(OrbitalParameters.StartingOffset + (FMath::Fmod(SimTime, OrbitalPeriod) / OrbitalPeriod), ESplineCoordinateSpace::Local);;
+	//return PredictionSplinePath->GetLocationAtTime(OrbitalParameters.StartingOffset + (FMath::Fmod(SimTime, OrbitalPeriod) / OrbitalPeriod), ESplineCoordinateSpace::Local);;
+	return OrbitalParameters.ParentObject->GetActorLocation() + UOrbitalBlueprintFunctionLibrary::GetOrbitalPosition(
+		OrbitalParameters.StartingOffset + (FMath::Fmod(SimTime, OrbitalPeriod) / OrbitalPeriod),
+		OrbitalParameters.SemiMajorAxis,
+		OrbitalParameters.Eccentrity,
+		OrbitalParameters.Inclination,
+		OrbitalParameters.AscendingNode,
+		OrbitalParameters.PeriapsisArgument
+	);
 }

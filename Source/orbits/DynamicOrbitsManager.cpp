@@ -43,13 +43,13 @@ void ADynamicOrbitsManager::BeginPlay()
 		FVector TempBodyPosition = Body->OrbitalPosition;
 		FVector TempBodyVelocity = Body->Velocity;
 		
-		Body->AppendPredictionPoint(TempBodyPosition);
+		Body->AppendPredictionPoint(TempBodyPosition, FixedStep, true);
 		//Body->PredictedPathPoint.Add(TempBodyPosition); // TODO: needed or not?
 
 		for (int32 PredictStepCounter = 0; PredictStepCounter < Body->GetSplinePointsCount(); PredictStepCounter++)
 		{
 			ComputeStep(TempBodyPosition, TempBodyVelocity, FixedStep, Time);
-			Body->AppendPredictionPoint(TempBodyPosition);
+			Body->AppendPredictionPoint(TempBodyPosition, FixedStep);
 			//Body->PredictedPathPoint.Add(TempBodyPosition);
 			Time += FixedStep;
 			//UE_LOG(LogTemp, Log, TEXT("Predicted Pos: %s"), *TempBodyPosition.ToString());
@@ -112,6 +112,7 @@ void ADynamicOrbitsManager::Step(double TimeDelta, double Time)
 		Body->OrbitalPosition = Pos;
 		Body->SetActorLocation(Pos);
 		Body->Velocity = Velocity;
+		//DrawDebugSphere(GetWorld(), Pos, 100, 10, FColor::Blue, false, 0.3);
 
 		// remove oldest predicted point and predict new one, from last position
 		FVector LastPoint = Body->GetLastPredictedPoint();
@@ -119,7 +120,7 @@ void ADynamicOrbitsManager::Step(double TimeDelta, double Time)
 		ComputeStep(LastPoint, Body->LastPredictedVelocity, FixedStep, LastTimePrediction, false);
 		//Body->PredictedPathPoint.RemoveAt(0);
 		//Body->PredictedPathPoint.Add(LastPoint);
-		Body->AppendPredictionPoint(LastPoint);
+		Body->AppendPredictionPoint(LastPoint, FixedStep);
 		Body->UpdatePredictionSpline();
 		Body->LastPredictedSimTime = LastTimePrediction + FixedStep;
 	}
@@ -162,9 +163,7 @@ FVector ADynamicOrbitsManager::ComputeAcceleration(FVector Position, double Time
 	for (AOrbitAttractorBase*& Attractor : Attractors)
 	{
 		FVector AttractorPosition = Attractor->GetMassCenterPosition(Time);
-		if(DoLog)
-			DrawDebugSphere(GetWorld(), AttractorPosition, 30, 10, FColor::Purple);
-		else
+		if(!DoLog)
 			DrawDebugSphere(GetWorld(), AttractorPosition, 30, 10, FColor::Red);
 		FVector VectorToAttractor = AttractorPosition - Position;
 		double DistSq = VectorToAttractor.SquaredLength();

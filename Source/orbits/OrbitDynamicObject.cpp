@@ -49,33 +49,52 @@ void AOrbitDynamicObject::TogglePredictPathVisibility(bool Show)
 	PredictionSplinePath->SetVisibility(Show);
 }
 
-void AOrbitDynamicObject::AppendPredictionPoint(FVector NewPoint)
+void AOrbitDynamicObject::AppendPredictionPoint(FVector NewPoint, double TimeStep, bool Forced)
 {
-	PredictedPathPoint.Add(NewPoint);
-	CurrentPathPointsCount += 1;
-
-	if (CurrentPathPointsCount > SplineOrbitPointsCount)
+	if(FVector::Dist(NewPoint, LastVisualizedPoint) > MinimalPredictionDistance
+		|| PredictionTimeAccumulator > MaximalPredictionWaitTime
+		|| Forced)
 	{
-		// remove last point, if there's too many already
-		PredictedPathPoint.RemoveAt(0);
-		CurrentPathPointsCount -= 1;
+		PredictedPathPoint.Add(NewPoint);
+		CurrentPathPointsCount += 1;
+
+		if (CurrentPathPointsCount > SplineOrbitPointsCount)
+		{
+			// remove last point, if there's too many already
+			PredictedPathPoint.RemoveAt(0);
+			CurrentPathPointsCount -= 1;
+		}
+
+		LastVisualizedPoint = NewPoint;
+		PredictionTimeAccumulator = 0.;
+		UE_LOG(LogTemp, Log, TEXT("Point added."));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("Point skipped."));
 	}
 
-	// TODO: spline meshes spawn at begin play/init??
-	// 
-	// TODO: remove PredictedPathPoint array, replace with spline points - or not?
-	// TODO: add new spline point, remove the last
-	// OR
-	// keep array, update spline meshes?
+	//PredictedPathPoint.Add(NewPoint);
+	//CurrentPathPointsCount += 1;
+
+	//if (CurrentPathPointsCount > SplineOrbitPointsCount)
+	//{
+	//	// remove last point, if there's too many already
+	//	PredictedPathPoint.RemoveAt(0);
+	//	CurrentPathPointsCount -= 1;
+	//}
+
+	LastPredictedPoint = NewPoint;
+	PredictionTimeAccumulator += TimeStep;
 }
 
 void AOrbitDynamicObject::UpdatePredictionSpline()
 {
-	if (CurrentPathPointsCount != SplineOrbitPointsCount)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Prediction spline not fully populated for an update. Owner: %s"), *GetDebugName(this));
-		return;
-	}
+	//if (CurrentPathPointsCount != SplineOrbitPointsCount)
+	//{
+	//	UE_LOG(LogTemp, Warning, TEXT("Prediction spline not fully populated for an update. Owner: %s"), *GetDebugName(this));
+	//	return;
+	//}
 
 	OnPredictionUpdate.Broadcast();
 
