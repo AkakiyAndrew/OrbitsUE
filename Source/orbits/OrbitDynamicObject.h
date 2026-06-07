@@ -54,9 +54,10 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void TogglePredictPathVisibility(bool Show);
 
-	void AppendPredictionPoint(FVector NewPoint, double TimeStep, bool Forced = false);
+	bool AppendPredictionPoint(FVector NewPoint, double TimeStep, bool Forced = false);
 	UFUNCTION(BlueprintCallable, Category = "Orbital")
 	FVector GetLastPredictedPoint() const { return LastPredictedPoint; };
+	int32 GetCurrentPredictionPointCount() const { return CurrentPathPointsCount; };
 	void UpdatePredictionSpline();
 
 	UPROPERTY(BlueprintAssignable, Category = "Orbital")

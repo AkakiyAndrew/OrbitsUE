@@ -44,12 +44,16 @@ void ADynamicOrbitsManager::BeginPlay()
 		FVector TempBodyVelocity = Body->Velocity;
 		
 		Body->AppendPredictionPoint(TempBodyPosition, FixedStep, true);
+		
 		//Body->PredictedPathPoint.Add(TempBodyPosition); // TODO: needed or not?
 
-		for (int32 PredictStepCounter = 0; PredictStepCounter < Body->GetSplinePointsCount(); PredictStepCounter++)
+		for (int32 PointsAdded = 1; Body->GetCurrentPredictionPointCount() < Body->GetSplinePointsCount(); )
 		{
 			ComputeStep(TempBodyPosition, TempBodyVelocity, FixedStep, Time);
-			Body->AppendPredictionPoint(TempBodyPosition, FixedStep);
+			if (Body->AppendPredictionPoint(TempBodyPosition, FixedStep))
+			{
+				PointsAdded += 1;
+			}
 			//Body->PredictedPathPoint.Add(TempBodyPosition);
 			Time += FixedStep;
 			//UE_LOG(LogTemp, Log, TEXT("Predicted Pos: %s"), *TempBodyPosition.ToString());

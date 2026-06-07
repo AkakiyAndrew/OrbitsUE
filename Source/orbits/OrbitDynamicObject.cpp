@@ -49,29 +49,55 @@ void AOrbitDynamicObject::TogglePredictPathVisibility(bool Show)
 	PredictionSplinePath->SetVisibility(Show);
 }
 
-void AOrbitDynamicObject::AppendPredictionPoint(FVector NewPoint, double TimeStep, bool Forced)
+bool AOrbitDynamicObject::AppendPredictionPoint(FVector NewPoint, double TimeStep, bool Forced)
 {
-	if(FVector::Dist(NewPoint, LastVisualizedPoint) > MinimalPredictionDistance
-		|| PredictionTimeAccumulator > MaximalPredictionWaitTime
+	bool Result = false;
+	double DistanceToFirst = 0.;
+	double DistanceToLast = 0.;
+	if (!PredictedPathPoint.IsEmpty())
+	{
+		DistanceToFirst = FVector::Dist(OrbitalPosition, PredictedPathPoint[0]);
+		DistanceToLast = FVector::Dist(NewPoint, PredictedPathPoint.Last());
+	}
+
+	// remove last point, if there's too many already
+	if (DistanceToFirst > MinimalPredictionDistance
+		&& CurrentPathPointsCount > SplineOrbitPointsCount
+		&& !PredictedPathPoint.IsEmpty())
+	{
+		PredictedPathPoint.RemoveAt(0);
+		CurrentPathPointsCount -= 1;
+
+		UE_LOG(LogTemp, Log, TEXT("Point removed. Orbital position: %s, First point: %s, distance: %f"),
+			*OrbitalPosition.ToCompactString(),
+			*PredictedPathPoint[0].ToCompactString(),
+			DistanceToFirst
+		);
+	}
+
+	if(DistanceToLast > MinimalPredictionDistance
 		|| Forced)
 	{
 		PredictedPathPoint.Add(NewPoint);
 		CurrentPathPointsCount += 1;
 
-		if (CurrentPathPointsCount > SplineOrbitPointsCount)
-		{
-			// remove last point, if there's too many already
-			PredictedPathPoint.RemoveAt(0);
-			CurrentPathPointsCount -= 1;
-		}
-
 		LastVisualizedPoint = NewPoint;
 		PredictionTimeAccumulator = 0.;
-		UE_LOG(LogTemp, Log, TEXT("Point added."));
+		UE_LOG(LogTemp, Log, TEXT("Point added. New point: %s, LastPoint: %s, distance: %f"),
+			*NewPoint.ToCompactString(),
+			*LastVisualizedPoint.ToCompactString(),
+			DistanceToLast
+		);
+		Result = true;
 	}
 	else
 	{
-		UE_LOG(LogTemp, Log, TEXT("Point skipped."));
+		UE_LOG(LogTemp, Log, TEXT("Point skipped. New point: %s, LastPoint: %s, distance: %f"), 
+			*NewPoint.ToCompactString(), 
+			*LastVisualizedPoint.ToCompactString(), 
+			DistanceToLast
+		);
+		Result = false;
 	}
 
 	//PredictedPathPoint.Add(NewPoint);
@@ -86,6 +112,7 @@ void AOrbitDynamicObject::AppendPredictionPoint(FVector NewPoint, double TimeSte
 
 	LastPredictedPoint = NewPoint;
 	PredictionTimeAccumulator += TimeStep;
+	return Result;
 }
 
 void AOrbitDynamicObject::UpdatePredictionSpline()
