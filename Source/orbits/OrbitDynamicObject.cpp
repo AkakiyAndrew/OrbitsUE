@@ -33,20 +33,15 @@ void AOrbitDynamicObject::Tick(float DeltaTime)
 	//if(ShowPredictedOrbit)
 	//{
 	//	int Count = 0;
-	//	for (FVector& Point : PredictedPathPoint)
+	//	for (FVector& Point : PredictedData.PathPoints)
 	//	{
-	//		if (PredictedPathPoint.IsValidIndex(Count + 1))
+	//		if (PredictedData.PathPoints.IsValidIndex(Count + 1))
 	//		{
-	//			DrawDebugLine(GetWorld(), Point, PredictedPathPoint[Count + 1], PreviewLinesColor, false);
+	//			DrawDebugLine(GetWorld(), Point, PredictedData.PathPoints[Count + 1], PreviewLinesColor, false);
 	//		}
 	//		Count += 1;
 	//	}
 	//}
-}
-
-void AOrbitDynamicObject::TogglePredictPathVisibility(bool Show)
-{
-	PredictionSplinePath->SetVisibility(Show);
 }
 
 bool AOrbitDynamicObject::AppendPredictionPoint(FVector NewPoint, double TimeStep, bool Forced)
@@ -54,23 +49,23 @@ bool AOrbitDynamicObject::AppendPredictionPoint(FVector NewPoint, double TimeSte
 	bool Result = false;
 	double DistanceToFirst = 0.;
 	double DistanceToLast = 0.;
-	if (!PredictedPathPoint.IsEmpty())
+	if (!PredictedData.PathPoints.IsEmpty())
 	{
-		DistanceToFirst = FVector::Dist(OrbitalPosition, PredictedPathPoint[0]);
-		DistanceToLast = FVector::Dist(NewPoint, PredictedPathPoint.Last());
+		DistanceToFirst = FVector::Dist(OrbitalPosition, PredictedData.PathPoints[0]);
+		DistanceToLast = FVector::Dist(NewPoint, PredictedData.LastVisualizedPoint);
 	}
 
 	// remove last point, if there's too many already
 	if (DistanceToFirst > MinimalPredictionDistance
-		&& CurrentPathPointsCount > SplineOrbitPointsCount
-		&& !PredictedPathPoint.IsEmpty())
+		&& PredictedData.PointsCount > MaxPredictionPoints
+		&& !PredictedData.PathPoints.IsEmpty())
 	{
-		PredictedPathPoint.RemoveAt(0);
-		CurrentPathPointsCount -= 1;
+		PredictedData.PathPoints.RemoveAt(0);
+		PredictedData.PointsCount -= 1;
 
 		UE_LOG(LogTemp, Log, TEXT("Point removed. Orbital position: %s, First point: %s, distance: %f"),
 			*OrbitalPosition.ToCompactString(),
-			*PredictedPathPoint[0].ToCompactString(),
+			*PredictedData.PathPoints[0].ToCompactString(),
 			DistanceToFirst
 		);
 	}
@@ -78,14 +73,14 @@ bool AOrbitDynamicObject::AppendPredictionPoint(FVector NewPoint, double TimeSte
 	if(DistanceToLast > MinimalPredictionDistance
 		|| Forced)
 	{
-		PredictedPathPoint.Add(NewPoint);
-		CurrentPathPointsCount += 1;
+		PredictedData.PathPoints.Add(NewPoint);
+		PredictedData.PointsCount += 1;
 
-		LastVisualizedPoint = NewPoint;
-		PredictionTimeAccumulator = 0.;
+		PredictedData.LastVisualizedPoint = NewPoint;
+		//PredictedData.PredictionTimeAccumulator = 0.;
 		UE_LOG(LogTemp, Log, TEXT("Point added. New point: %s, LastPoint: %s, distance: %f"),
 			*NewPoint.ToCompactString(),
-			*LastVisualizedPoint.ToCompactString(),
+			*PredictedData.LastVisualizedPoint.ToCompactString(),
 			DistanceToLast
 		);
 		Result = true;
@@ -94,52 +89,34 @@ bool AOrbitDynamicObject::AppendPredictionPoint(FVector NewPoint, double TimeSte
 	{
 		UE_LOG(LogTemp, Log, TEXT("Point skipped. New point: %s, LastPoint: %s, distance: %f"), 
 			*NewPoint.ToCompactString(), 
-			*LastVisualizedPoint.ToCompactString(), 
+			*PredictedData.LastVisualizedPoint.ToCompactString(),
 			DistanceToLast
 		);
 		Result = false;
 	}
 
-	//PredictedPathPoint.Add(NewPoint);
-	//CurrentPathPointsCount += 1;
+	//PredictedData.PathPoints.Add(NewPoint);
+	//PredictedData.PointsCount += 1;
 
-	//if (CurrentPathPointsCount > SplineOrbitPointsCount)
+	//if (PredictedData.PointsCount > SplineOrbitPointsCount)
 	//{
 	//	// remove last point, if there's too many already
-	//	PredictedPathPoint.RemoveAt(0);
-	//	CurrentPathPointsCount -= 1;
+	//	PredictedData.PathPoints.RemoveAt(0);
+	//	PredictedData.PointsCount -= 1;
 	//}
 
-	LastPredictedPoint = NewPoint;
-	PredictionTimeAccumulator += TimeStep;
+	PredictedData.LastPredictedPoint = NewPoint;
+	//PredictionTimeAccumulator += TimeStep;
 	return Result;
 }
 
 void AOrbitDynamicObject::UpdatePredictionSpline()
 {
-	//if (CurrentPathPointsCount != SplineOrbitPointsCount)
+	//if (PredictedData.PointsCount != SplineOrbitPointsCount)
 	//{
 	//	UE_LOG(LogTemp, Warning, TEXT("Prediction spline not fully populated for an update. Owner: %s"), *GetDebugName(this));
 	//	return;
 	//}
 
 	OnPredictionUpdate.Broadcast();
-
-	//PredictionSplinePath->SetSplinePoints(PredictedPathPoint, ESplineCoordinateSpace::World, true);
-
-	//// repurpose already created components
-	//for (int32 PointIndex = 0; PointIndex < SplineOrbitPointsCount; PointIndex++)
-	//{
-	//	if (!SplineMeshes[PointIndex])
-	//		continue;
-
-	//	// Start and End points/tangents
-	//	FVector StartPos, StartTangent, EndPos, EndTangent;
-	//	PredictionSplinePath->GetLocationAndTangentAtSplinePoint(PointIndex, StartPos, StartTangent, ESplineCoordinateSpace::Local);
-	//	PredictionSplinePath->GetLocationAndTangentAtSplinePoint(PointIndex + 1, EndPos, EndTangent, ESplineCoordinateSpace::Local);
-
-	//	SplineMeshes[PointIndex]->SetStartAndEnd(StartPos, StartTangent, EndPos, EndTangent, true);
-	//}
-
-	//PredictionSplinePath->UpdateSpline();
 }

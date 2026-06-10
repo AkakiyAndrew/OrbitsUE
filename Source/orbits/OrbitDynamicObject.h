@@ -8,6 +8,18 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FPredictionUpdate);
 
+struct FPredictedData
+{
+	TArray<FVector> PathPoints; // TODO: remake as TList for quicker removal??
+	int32 PointsCount = 0;
+	FVector LastPredictedPoint;
+	FVector LastVisualizedPoint;
+
+	FVector LastPredictedVelocity;
+	double LastPredictedSimTime = 0.;
+	//double TimeAccumulator = 0.;
+};
+
 UCLASS()
 class ORBITS_API AOrbitDynamicObject : public AOrbitalBase
 {
@@ -25,44 +37,38 @@ protected:
 	double MinimalPredictionDistance = 5.;
 	UPROPERTY(EditAnywhere, Category = "Orbit Visuals | Prediction params")
 	double MaximalPredictionWaitTime = 2.; // top limit for time accumulator since last prediction update
+	UPROPERTY(EditAnywhere, Category = "Orbit Visuals | Prediction params")
+	int32 MaxPredictionPoints = 100;
 
+	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
 	virtual void PostInitializeComponents();
 
 private:
-	//TList<FVector> PathPoints;
-	TArray<FVector> PredictedPathPoint; // TODO: remake as TList for quicker removal??
-	int32 CurrentPathPointsCount = 0;
-	FVector LastPredictedPoint;
-	FVector LastVisualizedPoint;
-	double PredictionTimeAccumulator = 0.;
+	FPredictedData PredictedData;
 
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 	
-	UPROPERTY(BlueprintReadOnly, Category = "Orbital")
-	FVector OrbitalPosition;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	FVector Velocity;
-	FVector LastPredictedVelocity;
-	double LastPredictedSimTime = 0.;
 
-	UFUNCTION(BlueprintCallable)
-	void TogglePredictPathVisibility(bool Show);
+	//UFUNCTION(BlueprintCallable)
+	//void TogglePredictPathVisibility(bool Show);
 
 	bool AppendPredictionPoint(FVector NewPoint, double TimeStep, bool Forced = false);
-	UFUNCTION(BlueprintCallable, Category = "Orbital")
-	FVector GetLastPredictedPoint() const { return LastPredictedPoint; };
-	int32 GetCurrentPredictionPointCount() const { return CurrentPathPointsCount; };
 	void UpdatePredictionSpline();
 
+	UFUNCTION(BlueprintCallable, Category = "Orbital")
+	FVector GetLastPredictedPoint() const { return PredictedData.LastPredictedPoint; };
+	UFUNCTION(BlueprintCallable)
+	TArray<FVector> GetPredictionPoints() const { return PredictedData.PathPoints; };
 	UPROPERTY(BlueprintAssignable, Category = "Orbital")
 	FPredictionUpdate OnPredictionUpdate;
 
-	UFUNCTION(BlueprintCallable)
-	TArray<FVector> GetPredictionPoints() const { return PredictedPathPoint; };
+	FPredictedData& GetPredictedData() { return PredictedData; };
+	int32 GetMaxPredictPoints() const { return MaxPredictionPoints; };
+
 };

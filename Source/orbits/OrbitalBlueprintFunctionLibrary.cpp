@@ -10,7 +10,7 @@
 //    double e; // eccentricity
 //};
 
-FVector UOrbitalBlueprintFunctionLibrary::GetOrbitalPosition(
+FVector UOrbitalBlueprintFunctionLibrary::CalcOrbitalPosition(
     double PathFraction, 
     double SemiMajorAxis, 
     double Eccentricity,

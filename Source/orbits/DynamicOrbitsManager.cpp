@@ -40,14 +40,12 @@ void ADynamicOrbitsManager::BeginPlay()
 	for (AOrbitDynamicObject*& Body : DynamicObjects)
 	{
 		double Time = 0.;
-		FVector TempBodyPosition = Body->OrbitalPosition;
+		FVector TempBodyPosition = Body->GetOrbitalPosition();
 		FVector TempBodyVelocity = Body->Velocity;
 		
 		Body->AppendPredictionPoint(TempBodyPosition, FixedStep, true);
-		
-		//Body->PredictedPathPoint.Add(TempBodyPosition); // TODO: needed or not?
 
-		for (int32 PointsAdded = 1; Body->GetCurrentPredictionPointCount() < Body->GetSplinePointsCount(); )
+		for (int32 PointsAdded = 1; Body->GetPredictedData().PointsCount < Body->GetMaxPredictPoints(); )
 		{
 			ComputeStep(TempBodyPosition, TempBodyVelocity, FixedStep, Time);
 			if (Body->AppendPredictionPoint(TempBodyPosition, FixedStep))
@@ -59,8 +57,8 @@ void ADynamicOrbitsManager::BeginPlay()
 			//UE_LOG(LogTemp, Log, TEXT("Predicted Pos: %s"), *TempBodyPosition.ToString());
 		}
 		Body->UpdatePredictionSpline();
-		Body->LastPredictedVelocity = TempBodyVelocity;
-		Body->LastPredictedSimTime = Time;
+		Body->GetPredictedData().LastPredictedVelocity = TempBodyVelocity;
+		Body->GetPredictedData().LastPredictedSimTime = Time;
 	}
 }
 
@@ -94,7 +92,7 @@ void ADynamicOrbitsManager::Step(double TimeDelta, double Time)
 	for (AOrbitDynamicObject* &Body : DynamicObjects)
 	{
 		// wrap to func, for predictions
-		FVector Pos = Body->OrbitalPosition;
+		FVector Pos = Body->GetOrbitalPosition();
 		FVector Velocity = Body->Velocity;
 
 		//UE_LOG(LogTemp, Log, 
@@ -113,20 +111,18 @@ void ADynamicOrbitsManager::Step(double TimeDelta, double Time)
 		//	*Velocity.ToString()
 		//);
 
-		Body->OrbitalPosition = Pos;
+		Body->SetOrbitalPosition(Pos);
 		Body->SetActorLocation(Pos);
 		Body->Velocity = Velocity;
 		//DrawDebugSphere(GetWorld(), Pos, 100, 10, FColor::Blue, false, 0.3);
 
 		// remove oldest predicted point and predict new one, from last position
 		FVector LastPoint = Body->GetLastPredictedPoint();
-		double LastTimePrediction = Body->LastPredictedSimTime; // TODO: wrong prediction time (save in body?)
-		ComputeStep(LastPoint, Body->LastPredictedVelocity, FixedStep, LastTimePrediction, false);
-		//Body->PredictedPathPoint.RemoveAt(0);
-		//Body->PredictedPathPoint.Add(LastPoint);
+		double LastTimePrediction = Body->GetPredictedData().LastPredictedSimTime; // TODO: wrong prediction time (save in body?)
+		ComputeStep(LastPoint, Body->GetPredictedData().LastPredictedVelocity, FixedStep, LastTimePrediction, false);
 		Body->AppendPredictionPoint(LastPoint, FixedStep);
 		Body->UpdatePredictionSpline();
-		Body->LastPredictedSimTime = LastTimePrediction + FixedStep;
+		Body->GetPredictedData().LastPredictedSimTime = LastTimePrediction + FixedStep;
 	}
 }
 

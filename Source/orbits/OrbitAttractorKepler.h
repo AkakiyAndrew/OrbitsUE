@@ -28,8 +28,28 @@ struct FOrbitalParameters
 	TObjectPtr<AOrbitAttractorBase> ParentObject = nullptr;
 };
 
+USTRUCT(BlueprintType)
+struct FSplineVisuals
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "Orbit Visuals")
+	float SplineGlow = 30.f;
+	UPROPERTY(EditAnywhere, Category = "Orbit Visuals")
+	float SplineBandWidth = 0.40f;
+	UPROPERTY(EditAnywhere, Category = "Orbit Visuals")
+	float SplineOpacity = 0.2f;
+	UPROPERTY(EditAnywhere, Category = "Orbit Visuals")
+	FLinearColor SplineColor;
+	UPROPERTY(EditAnywhere, Category = "Orbit Visuals")
+	UMaterial* SplineMaterial;
+	UPROPERTY(EditAnywhere, Category = "Orbit Visuals")
+	UStaticMesh* SplineSectionMesh;
+};
+
 class USplineComponent;
 class USplineMeshComponent;
+class UMaterialInstanceDynamic;
 
 UCLASS()
 class ORBITS_API AOrbitAttractorKepler : public AOrbitAttractorBase
@@ -45,8 +65,23 @@ protected:
 	FOrbitalParameters OrbitalParameters;
 	TArray<FVector> CreateOrbitPoints();
 	
+	// Spline Visuals
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	TObjectPtr<USplineComponent> SplinePath;
+
+	UPROPERTY(EditAnywhere)
+	FSplineVisuals SplineVisuals;
+	UPROPERTY(EditAnywhere, Category = "Orbital|Orbit Params", meta = (ClampMin = "0"))
+	int32 SplineOrbitPointsCount = 0;
+
+	UPROPERTY()
+	TArray<TObjectPtr<USplineMeshComponent>> SplineMeshes;
+	UPROPERTY()
+	TObjectPtr<UMaterialInstanceDynamic> SplineMaterialInstance;
+	bool bSplineMeshesSetUp = false;
+	void SplineMeshesSetUp();
+
 private:
-	// TODO: calc this somehow, from SemiMajorAxis??
 	double OrbitalPeriod;
 
 protected:
@@ -64,4 +99,6 @@ public:
 	void UpdateOrbitalPosition(double SimTime);
 
 	virtual FVector GetMassCenterPosition(double SimTime) const override;
+
+	int32 GetSplinePointsCount() const { return SplineOrbitPointsCount; }
 };

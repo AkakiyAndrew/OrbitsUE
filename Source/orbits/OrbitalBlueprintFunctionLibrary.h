@@ -16,7 +16,7 @@ class ORBITS_API UOrbitalBlueprintFunctionLibrary : public UBlueprintFunctionLib
 	
 public:
 	UFUNCTION(BlueprintCallable, Category = "Orbital")
-	static FVector GetOrbitalPosition(
+	static FVector CalcOrbitalPosition(
 		double PathFraction, 
 		double SemiMajorAxis, 
 		double Eccentricity,

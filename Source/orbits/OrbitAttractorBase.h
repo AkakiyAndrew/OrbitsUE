@@ -27,8 +27,6 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	FVector OrbitalPosition;
-
 	UFUNCTION(BlueprintCallable)
 	virtual FVector GetMassCenterPosition(double SimTime) const;
 	UFUNCTION(BlueprintCallable)
