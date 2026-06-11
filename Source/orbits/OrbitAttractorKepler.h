@@ -94,6 +94,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "Orbital")
 	void UpdateOrbit();
+	void UpdateOrbitalPeriod();
 
 	// To call from Manager's Tick
 	void UpdateOrbitalPosition(double SimTime);

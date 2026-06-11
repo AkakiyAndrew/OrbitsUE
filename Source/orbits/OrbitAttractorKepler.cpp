@@ -12,8 +12,11 @@
 AOrbitAttractorKepler::AOrbitAttractorKepler()
 {
 	OrbitingBody = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("OrbitingBody"));
+	OrbitingBody->SetupAttachment(GetRootComponent());
 
 	SplinePath = CreateDefaultSubobject<USplineComponent>(TEXT("OrbitSpline"));
+	SplinePath->SetupAttachment(GetRootComponent());
+	//SplinePath->AttachToComponent(Root, FAttachmentTransformRules::KeepRelativeTransform);
 	SplinePath->SetClosedLoop(true);
 }
 
@@ -21,10 +24,7 @@ AOrbitAttractorKepler::AOrbitAttractorKepler()
 void AOrbitAttractorKepler::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
-	if(OrbitalParameters.ParentObject)
-		OrbitalPeriod = 2 * UE_DOUBLE_PI * FMath::Sqrt(
-			FMath::Pow(OrbitalParameters.SemiMajorAxis, 3) / (OrbitalParameters.ParentObject->GetBodyGM() + GetBodyGM())
-		);
+	UpdateOrbitalPeriod();
 
 	SplineMeshesSetUp();
 }
@@ -58,7 +58,7 @@ TArray<FVector> AOrbitAttractorKepler::CreateOrbitPoints()
 
 	for (int32 Num = 1; Num <= SplineOrbitPointsCount; Num++)
 	{
-		Result.Add(OrbitalParameters.ParentObject->GetActorLocation() + UOrbitalBlueprintFunctionLibrary::CalcOrbitalPosition(
+		Result.Add(OrbitalParameters.ParentObject->GetMassCenterPosition(0.) + UOrbitalBlueprintFunctionLibrary::CalcOrbitalPosition(
 			static_cast<float>(Num) / SplineOrbitPointsCount,
 			OrbitalParameters.SemiMajorAxis,
 			OrbitalParameters.Eccentrity,
@@ -72,12 +72,14 @@ TArray<FVector> AOrbitAttractorKepler::CreateOrbitPoints()
 
 void AOrbitAttractorKepler::UpdateOrbit()
 {
-	TArray<FVector> OrbitPathPoints = CreateOrbitPoints();
 	if (!SplineVisuals.SplineSectionMesh or !SplineVisuals.SplineMaterial)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Spline visuals not provided."));
 		return;
 	}
+	
+	UpdateOrbitalPeriod();
+	TArray<FVector> OrbitPathPoints = CreateOrbitPoints();
 	if (OrbitPathPoints.Num() == 0)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("No spline orbital points for preview."));
@@ -91,7 +93,6 @@ void AOrbitAttractorKepler::UpdateOrbit()
 	}
 
 	SetActorLocation(OrbitalParameters.ParentObject->GetMassCenterPosition(0.f));
-
 	SplinePath->SetSplinePoints(OrbitPathPoints, ESplineCoordinateSpace::World, true);
 
 	// repurpose already created components
@@ -111,16 +112,25 @@ void AOrbitAttractorKepler::UpdateOrbit()
 	UpdateOrbitalPosition(0.);
 }
 
+void AOrbitAttractorKepler::UpdateOrbitalPeriod()
+{
+	if (OrbitalParameters.ParentObject)
+		OrbitalPeriod = 2 * UE_DOUBLE_PI * FMath::Sqrt(
+			FMath::Pow(OrbitalParameters.SemiMajorAxis, 3) / (OrbitalParameters.ParentObject->GetBodyGM() + GetBodyGM())
+		);
+}
+
 void AOrbitAttractorKepler::UpdateOrbitalPosition(double SimTime)
 {
 	OrbitalPosition = GetMassCenterPosition(SimTime);
-	OrbitingBody->SetRelativeLocation(OrbitalPosition);
+	OrbitingBody->SetWorldLocation(OrbitalPosition);
+	SetActorLocation(OrbitalParameters.ParentObject->GetMassCenterPosition(SimTime));
 }
 
 FVector AOrbitAttractorKepler::GetMassCenterPosition(double SimTime) const
 {
 	//UE_LOG(LogTemp, Log, TEXT("MassCenter, FMod: %f, Period: %f, SimTime: %f."), FMath::Fmod(SimTime, OrbitalPeriod), OrbitalPeriod, SimTime);
-	return OrbitalParameters.ParentObject->GetActorLocation() + UOrbitalBlueprintFunctionLibrary::CalcOrbitalPosition(
+	return OrbitalParameters.ParentObject->GetMassCenterPosition(SimTime) + UOrbitalBlueprintFunctionLibrary::CalcOrbitalPosition(
 		OrbitalParameters.StartingOffset + (FMath::Fmod(SimTime, OrbitalPeriod) / OrbitalPeriod),
 		OrbitalParameters.SemiMajorAxis,
 		OrbitalParameters.Eccentrity,
@@ -162,7 +172,7 @@ void AOrbitAttractorKepler::SplineMeshesSetUp()
 	for (int32 i = 0; i < SplineOrbitPointsCount; i++)
 	{
 		USplineMeshComponent* SplineMesh = NewObject<USplineMeshComponent>(this);
-		SplineMesh->SetMobility(EComponentMobility::Static);
+		SplineMesh->SetMobility(EComponentMobility::Movable); // TODO: set static, if parent object is immovable??
 
 		// Register and attach
 		SplineMesh->CreationMethod = EComponentCreationMethod::Native;

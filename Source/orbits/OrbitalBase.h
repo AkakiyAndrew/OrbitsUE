@@ -27,7 +27,8 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void PostInitializeComponents() override;
 
-public:	
+public:
+	virtual void OnConstruction(const FTransform& Transform) override;
 	UFUNCTION(BlueprintCallable, Category = "Orbital")
 	FVector GetOrbitalPosition() const { return OrbitalPosition; };
 	void SetOrbitalPosition(FVector NewPos) { OrbitalPosition = NewPos; };

@@ -26,6 +26,10 @@ void AOrbitalBase::BeginPlay()
 void AOrbitalBase::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
+}
+
+void AOrbitalBase::OnConstruction(const FTransform& Transform)
+{
 	OrbitalPosition = GetActorLocation();
 }
 
