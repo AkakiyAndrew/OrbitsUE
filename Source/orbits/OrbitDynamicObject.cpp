@@ -4,6 +4,7 @@
 #include "OrbitDynamicObject.h"
 #include "Components/SplineComponent.h"
 #include "Components/SplineMeshComponent.h"
+#include "DynamicOrbitsManager.h"
 
 // Sets default values
 AOrbitDynamicObject::AOrbitDynamicObject()
@@ -29,19 +30,6 @@ void AOrbitDynamicObject::PostInitializeComponents()
 void AOrbitDynamicObject::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
-	//if(ShowPredictedOrbit)
-	//{
-	//	int Count = 0;
-	//	for (FVector& Point : PredictedData.PathPoints)
-	//	{
-	//		if (PredictedData.PathPoints.IsValidIndex(Count + 1))
-	//		{
-	//			DrawDebugLine(GetWorld(), Point, PredictedData.PathPoints[Count + 1], PreviewLinesColor, false);
-	//		}
-	//		Count += 1;
-	//	}
-	//}
 }
 
 bool AOrbitDynamicObject::AppendPredictionPoint(FVector NewPoint, double TimeStep, bool Forced)
@@ -63,11 +51,11 @@ bool AOrbitDynamicObject::AppendPredictionPoint(FVector NewPoint, double TimeSte
 		PredictedData.PathPoints.RemoveAt(0);
 		PredictedData.PointsCount -= 1;
 
-		UE_LOG(LogTemp, Log, TEXT("Point removed. Orbital position: %s, First point: %s, distance: %f"),
-			*OrbitalPosition.ToCompactString(),
-			*PredictedData.PathPoints[0].ToCompactString(),
-			DistanceToFirst
-		);
+		//UE_LOG(LogTemp, Log, TEXT("Point removed. Orbital position: %s, First point: %s, distance: %f"),
+		//	*OrbitalPosition.ToCompactString(),
+		//	*PredictedData.PathPoints[0].ToCompactString(),
+		//	DistanceToFirst
+		//);
 	}
 
 	if(DistanceToLast > MinimalPredictionDistance
@@ -78,39 +66,29 @@ bool AOrbitDynamicObject::AppendPredictionPoint(FVector NewPoint, double TimeSte
 
 		PredictedData.LastVisualizedPoint = NewPoint;
 		//PredictedData.PredictionTimeAccumulator = 0.;
-		UE_LOG(LogTemp, Log, TEXT("Point added. New point: %s, LastPoint: %s, distance: %f"),
-			*NewPoint.ToCompactString(),
-			*PredictedData.LastVisualizedPoint.ToCompactString(),
-			DistanceToLast
-		);
+		//UE_LOG(LogTemp, Log, TEXT("Point added. New point: %s, LastPoint: %s, distance: %f"),
+		//	*NewPoint.ToCompactString(),
+		//	*PredictedData.LastVisualizedPoint.ToCompactString(),
+		//	DistanceToLast
+		//);
 		Result = true;
 	}
 	else
 	{
-		UE_LOG(LogTemp, Log, TEXT("Point skipped. New point: %s, LastPoint: %s, distance: %f"), 
-			*NewPoint.ToCompactString(), 
-			*PredictedData.LastVisualizedPoint.ToCompactString(),
-			DistanceToLast
-		);
+		//UE_LOG(LogTemp, Log, TEXT("Point skipped. New point: %s, LastPoint: %s, distance: %f"), 
+		//	*NewPoint.ToCompactString(), 
+		//	*PredictedData.LastVisualizedPoint.ToCompactString(),
+		//	DistanceToLast
+		//);
 		Result = false;
 	}
-
-	//PredictedData.PathPoints.Add(NewPoint);
-	//PredictedData.PointsCount += 1;
-
-	//if (PredictedData.PointsCount > SplineOrbitPointsCount)
-	//{
-	//	// remove last point, if there's too many already
-	//	PredictedData.PathPoints.RemoveAt(0);
-	//	PredictedData.PointsCount -= 1;
-	//}
 
 	PredictedData.LastPredictedPoint = NewPoint;
 	//PredictionTimeAccumulator += TimeStep;
 	return Result;
 }
 
-void AOrbitDynamicObject::UpdatePredictionSpline()
+void AOrbitDynamicObject::UpdatePredictionPath()
 {
 	//if (PredictedData.PointsCount != SplineOrbitPointsCount)
 	//{
@@ -118,5 +96,23 @@ void AOrbitDynamicObject::UpdatePredictionSpline()
 	//	return;
 	//}
 
+	OnPredictionUpdate.Broadcast();
+}
+
+void AOrbitDynamicObject::ClearPrediction()
+{
+	PredictedData.PathPoints.Empty(PredictedData.PointsCount); 
+	PredictedData.PointsCount = 0;
+}
+
+void AOrbitDynamicObject::RecalculatePrediction()
+{
+	if (!Manager)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No OrbitManager assigned."));
+		return;
+	}
+
+	Manager->CalculateDynBodyPrediction(this);
 	OnPredictionUpdate.Broadcast();
 }

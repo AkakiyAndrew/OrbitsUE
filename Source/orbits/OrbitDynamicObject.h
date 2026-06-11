@@ -20,6 +20,8 @@ struct FPredictedData
 	//double TimeAccumulator = 0.;
 };
 
+class ADynamicOrbitsManager;
+
 UCLASS()
 class ORBITS_API AOrbitDynamicObject : public AOrbitalBase
 {
@@ -54,12 +56,19 @@ public:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	FVector Velocity;
+	ADynamicOrbitsManager* Manager;
 
 	//UFUNCTION(BlueprintCallable)
 	//void TogglePredictPathVisibility(bool Show);
 
 	bool AppendPredictionPoint(FVector NewPoint, double TimeStep, bool Forced = false);
-	void UpdatePredictionSpline();
+	void UpdatePredictionPath();
+	void ClearPrediction();
+	UFUNCTION(BlueprintCallable, Category = "Orbital")
+	void RecalculatePrediction();
+	UFUNCTION(BlueprintCallable, Category = "Orbital")
+	void AddVelocity(FVector Added) { Velocity += Added; RecalculatePrediction(); };
+
 
 	UFUNCTION(BlueprintCallable, Category = "Orbital")
 	FVector GetLastPredictedPoint() const { return PredictedData.LastPredictedPoint; };

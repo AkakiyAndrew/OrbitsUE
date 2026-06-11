@@ -44,9 +44,12 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void Step(double TimeDelta, double Time);
 	UFUNCTION(BlueprintCallable)
-	void ComputeStep(FVector &BodyPosition, FVector &BodyVelocity, double TimeDelta, double Time, bool DoLog=true);
+	void ComputeStep(FVector &BodyPosition, FVector &BodyVelocity, double TimeDelta, double Time, bool DoLog=true) const;
 	UFUNCTION(BlueprintCallable)
-	FVector ComputeAcceleration(FVector Position, double Time = 0, bool DoLog=true);
+	FVector ComputeAcceleration(FVector Position, double Time = 0, bool DoLog=true) const;
+
+	UFUNCTION(BlueprintCallable)
+	void CalculateDynBodyPrediction(AOrbitDynamicObject* Body) const;
 
 	UFUNCTION(BlueprintCallable, Category = "Orbital Manager")
 	void SetTimeScale(double NewTimeScale) { TimeScale = NewTimeScale; };

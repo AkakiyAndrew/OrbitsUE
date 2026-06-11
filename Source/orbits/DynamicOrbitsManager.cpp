@@ -39,26 +39,8 @@ void ADynamicOrbitsManager::BeginPlay()
 	// TODO: wrap in func for preduction recalc for each body separetly (here & after movement)
 	for (AOrbitDynamicObject*& Body : DynamicObjects)
 	{
-		double Time = 0.;
-		FVector TempBodyPosition = Body->GetOrbitalPosition();
-		FVector TempBodyVelocity = Body->Velocity;
-		
-		Body->AppendPredictionPoint(TempBodyPosition, FixedStep, true);
-
-		for (int32 PointsAdded = 1; Body->GetPredictedData().PointsCount < Body->GetMaxPredictPoints(); )
-		{
-			ComputeStep(TempBodyPosition, TempBodyVelocity, FixedStep, Time);
-			if (Body->AppendPredictionPoint(TempBodyPosition, FixedStep))
-			{
-				PointsAdded += 1;
-			}
-			//Body->PredictedPathPoint.Add(TempBodyPosition);
-			Time += FixedStep;
-			//UE_LOG(LogTemp, Log, TEXT("Predicted Pos: %s"), *TempBodyPosition.ToString());
-		}
-		Body->UpdatePredictionSpline();
-		Body->GetPredictedData().LastPredictedVelocity = TempBodyVelocity;
-		Body->GetPredictedData().LastPredictedSimTime = Time;
+		Body->Manager = this;
+		CalculateDynBodyPrediction(Body);
 	}
 }
 
@@ -114,53 +96,52 @@ void ADynamicOrbitsManager::Step(double TimeDelta, double Time)
 		Body->SetOrbitalPosition(Pos);
 		Body->SetActorLocation(Pos);
 		Body->Velocity = Velocity;
-		//DrawDebugSphere(GetWorld(), Pos, 100, 10, FColor::Blue, false, 0.3);
 
 		// remove oldest predicted point and predict new one, from last position
 		FVector LastPoint = Body->GetLastPredictedPoint();
 		double LastTimePrediction = Body->GetPredictedData().LastPredictedSimTime; // TODO: wrong prediction time (save in body?)
 		ComputeStep(LastPoint, Body->GetPredictedData().LastPredictedVelocity, FixedStep, LastTimePrediction, false);
 		Body->AppendPredictionPoint(LastPoint, FixedStep);
-		Body->UpdatePredictionSpline();
+		Body->UpdatePredictionPath();
 		Body->GetPredictedData().LastPredictedSimTime = LastTimePrediction + FixedStep;
 	}
 }
 
-void ADynamicOrbitsManager::ComputeStep(FVector &BodyPosition, FVector &BodyVelocity, double TimeDelta, double Time, bool DoLog)
+void ADynamicOrbitsManager::ComputeStep(FVector &BodyPosition, FVector &BodyVelocity, double TimeDelta, double Time, bool DoLog) const
 {
 	FVector Acc0 = ComputeAcceleration(BodyPosition, Time, DoLog);
 	BodyPosition += BodyVelocity * FixedStep + 0.5 * Acc0 * FixedStep * FixedStep;
 
-	if (DoLog)
-	{
-		UE_LOG(LogTemp, Log,
-			TEXT("ComputeStep Acc0, BodyPosition: %s, Acc0: %s, Time: %f"),
-			*BodyPosition.ToString(),
-			*Acc0.ToString(),
-			Time
-		);
-	}
+	//if (DoLog)
+	//{
+	//	UE_LOG(LogTemp, Log,
+	//		TEXT("ComputeStep Acc0, BodyPosition: %s, Acc0: %s, Time: %f"),
+	//		*BodyPosition.ToString(),
+	//		*Acc0.ToString(),
+	//		Time
+	//	);
+	//}
 
 	FVector Acc1 = ComputeAcceleration(BodyPosition, Time + FixedStep, DoLog);
 	BodyVelocity += 0.5 * (Acc0 + Acc1) * FixedStep;
 
-	if (DoLog)
-	{
-		UE_LOG(LogTemp, Log,
-			TEXT("ComputeStep Acc1, BodyPosition: %s, BodyVelocity: %s, Acc1: %s, Time: %f"),
-			*BodyPosition.ToString(),
-			*BodyVelocity.ToString(),
-			*Acc1.ToString(),
-			Time
-		);
-	}
+	//if (DoLog)
+	//{
+	//	UE_LOG(LogTemp, Log,
+	//		TEXT("ComputeStep Acc1, BodyPosition: %s, BodyVelocity: %s, Acc1: %s, Time: %f"),
+	//		*BodyPosition.ToString(),
+	//		*BodyVelocity.ToString(),
+	//		*Acc1.ToString(),
+	//		Time
+	//	);
+	//}
 }
 
-FVector ADynamicOrbitsManager::ComputeAcceleration(FVector Position, double Time, bool DoLog)
+FVector ADynamicOrbitsManager::ComputeAcceleration(FVector Position, double Time, bool DoLog) const
 {
 	FVector Acceleration = FVector();
 
-	for (AOrbitAttractorBase*& Attractor : Attractors)
+	for (const AOrbitAttractorBase* Attractor : Attractors)
 	{
 		FVector AttractorPosition = Attractor->GetMassCenterPosition(Time);
 		if(!DoLog)
@@ -170,23 +151,60 @@ FVector ADynamicOrbitsManager::ComputeAcceleration(FVector Position, double Time
 		double InvDist3 = 1.0 / (FMath::Sqrt(DistSq) * DistSq);
 
 		Acceleration += VectorToAttractor * (Attractor->GetBodyGM() * InvDist3);
-		if(DoLog)
-			UE_LOG(LogTemp, Log, 
-				TEXT("AttractorPosition: %s, VectorToAttractor: %s, DistSq: %f, InvDist3: %f, GM: %f, Acceleration: %s, Position: %s, Time: %f"), 
-				*AttractorPosition.ToString(),
-				*VectorToAttractor.ToString(),
-				DistSq,
-				InvDist3,
-				Attractor->GetBodyGM(),
-				*Acceleration.ToString(),
-				*Position.ToString(), 
-				Time
-			);
+		//if(DoLog)
+		//{
+		//	UE_LOG(LogTemp, Log,
+		//		TEXT("AttractorPosition: %s, VectorToAttractor: %s, DistSq: %f, InvDist3: %f, GM: %f, Acceleration: %s, Position: %s, Time: %f"),
+		//		*AttractorPosition.ToString(),
+		//		*VectorToAttractor.ToString(),
+		//		DistSq,
+		//		InvDist3,
+		//		Attractor->GetBodyGM(),
+		//		*Acceleration.ToString(),
+		//		*Position.ToString(),
+		//		Time
+		//	);
+		//}
 	}
 	//if(DoLog)
 	//{
 	//	UE_LOG(LogTemp, Log, TEXT("Acceleration: %s, Time: %f"), *Acceleration.ToString(), Time);
 	//}
 	return Acceleration;
+}
+
+void ADynamicOrbitsManager::CalculateDynBodyPrediction(AOrbitDynamicObject* Body) const
+{
+	if (Body->IsActorBeingDestroyed())
+	{
+		return;
+	}
+
+	if (!DynamicObjects.Contains(Body))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Tried to calculate prediction for body, that not in OrbitManager: %s."), *Body->GetActorNameOrLabel());
+		return;
+	}
+
+	Body->ClearPrediction();
+
+	double Time = 0.;
+	FVector TempBodyPosition = Body->GetOrbitalPosition();
+	FVector TempBodyVelocity = Body->Velocity;
+
+	Body->AppendPredictionPoint(TempBodyPosition, FixedStep, true);
+
+	for (int32 PointsAdded = 1; PointsAdded < Body->GetMaxPredictPoints(); )
+	{
+		ComputeStep(TempBodyPosition, TempBodyVelocity, FixedStep, Time);
+		if (Body->AppendPredictionPoint(TempBodyPosition, FixedStep))
+		{
+			PointsAdded += 1;
+		}
+		Time += FixedStep;
+	}
+	Body->UpdatePredictionPath();
+	Body->GetPredictedData().LastPredictedVelocity = TempBodyVelocity;
+	Body->GetPredictedData().LastPredictedSimTime = Time;
 }
 
