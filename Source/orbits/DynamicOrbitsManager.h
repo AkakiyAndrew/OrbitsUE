@@ -8,6 +8,7 @@
 
 class AOrbitAttractorBase;
 class AOrbitDynamicObject;
+class UOrbitalObjectComponent;
 
 UCLASS()
 class ORBITS_API ADynamicOrbitsManager : public AActor
@@ -22,21 +23,22 @@ private:
 	UPROPERTY()
 	double TimeAccumulator = 0.f;
 	double TimePassed = 0.;
+	UPROPERTY()
 	TArray<AOrbitAttractorBase*> Attractors;
+	UPROPERTY()
 	TArray<AOrbitDynamicObject*> DynamicObjects;
 	
-
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 	UPROPERTY(EditInstanceOnly)
-	double TimeScale = 1.f;
+	double TimeScale = 1.;
 	UPROPERTY(EditInstanceOnly)
-	double FixedStep = 0.02f;
-	UPROPERTY(EditAnywhere)
-	int32 PreviewSteps = 100;
-
+	double FixedStep = 0.02;
+	UPROPERTY(EditInstanceOnly)
+	double SimScale = 1.;
+	
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -53,4 +55,10 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Orbital Manager")
 	void SetTimeScale(double NewTimeScale) { TimeScale = NewTimeScale; };
+
+	UFUNCTION(BlueprintCallable, Category = "Orbital Manager")
+	void ToggleObjectsVisibility(bool NewState);
+	
+	// spawns dyn orbital object for "local" orbital component's host 
+	AOrbitDynamicObject* RegisterDynamicObject(const UOrbitalObjectComponent* OrbitalComponent);
 };

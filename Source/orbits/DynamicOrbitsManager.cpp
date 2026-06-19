@@ -2,6 +2,8 @@
 
 
 #include "DynamicOrbitsManager.h"
+
+#include "OrbitalObjectComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "OrbitDynamicObject.h"
 #include "OrbitAttractorBase.h"
@@ -36,7 +38,6 @@ void ADynamicOrbitsManager::BeginPlay()
 	Buf.Empty();
 
 	// first (big) prediction for each dynamic object
-	// TODO: wrap in func for preduction recalc for each body separetly (here & after movement)
 	for (AOrbitDynamicObject*& Body : DynamicObjects)
 	{
 		Body->Manager = this;
@@ -57,8 +58,7 @@ void ADynamicOrbitsManager::Tick(float DeltaTime)
 		
 		for (AOrbitAttractorBase*& Attractor: Attractors)
 		{
-			AOrbitAttractorKepler* OrbitingAttractor = Cast<AOrbitAttractorKepler>(Attractor);
-			if (OrbitingAttractor)
+			if (AOrbitAttractorKepler* OrbitingAttractor = Cast<AOrbitAttractorKepler>(Attractor))
 			{
 				OrbitingAttractor->UpdateOrbitalPosition(TimePassed);
 			}
@@ -93,9 +93,8 @@ void ADynamicOrbitsManager::Step(double TimeDelta, double Time)
 		//	*Velocity.ToString()
 		//);
 
-		Body->SetOrbitalPosition(Pos);
-		Body->SetActorLocation(Pos);
-		Body->Velocity = Velocity;
+		
+		Body->UpdateOrbitalMovement(Pos, Velocity);
 
 		// remove oldest predicted point and predict new one, from last position
 		FVector LastPoint = Body->GetLastPredictedPoint();
@@ -206,5 +205,35 @@ void ADynamicOrbitsManager::CalculateDynBodyPrediction(AOrbitDynamicObject* Body
 	Body->UpdatePredictionPath();
 	Body->GetPredictedData().LastPredictedVelocity = TempBodyVelocity;
 	Body->GetPredictedData().LastPredictedSimTime = Time;
+}
+
+void ADynamicOrbitsManager::ToggleObjectsVisibility(bool NewState)
+{
+	for (AOrbitAttractorBase*& Attractor : Attractors)
+	{
+		Attractor->SetActorHiddenInGame(NewState);
+	}
+
+	for (AOrbitDynamicObject*& DynObj : DynamicObjects)
+	{
+		DynObj->SetActorHiddenInGame(NewState);
+	}
+}
+
+AOrbitDynamicObject* ADynamicOrbitsManager::RegisterDynamicObject(const UOrbitalObjectComponent* OrbitalComponent)
+{
+	FActorSpawnParameters Params;
+	AOrbitDynamicObject* DynObject = GetWorld()->SpawnActor<AOrbitDynamicObject>(
+		AOrbitDynamicObject::StaticClass(),
+		OrbitalComponent->GetOwner()->GetActorLocation() / SimScale,
+		OrbitalComponent->GetOwner()->GetActorRotation(),
+		Params
+	);
+
+	DynObject->Manager = this;
+	DynObject->SetOrbitalPosition(OrbitalComponent->GetOwner()->GetActorLocation());
+	DynObject->CalculatePrediction();
+	
+	return DynObject;
 }
 

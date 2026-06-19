@@ -31,5 +31,5 @@ public:
 	virtual void OnConstruction(const FTransform& Transform) override;
 	UFUNCTION(BlueprintCallable, Category = "Orbital")
 	FVector GetOrbitalPosition() const { return OrbitalPosition; };
-	void SetOrbitalPosition(FVector NewPos) { OrbitalPosition = NewPos; };
+	void SetOrbitalPosition(const FVector& NewPos) { OrbitalPosition = NewPos; };
 };

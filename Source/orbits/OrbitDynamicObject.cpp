@@ -2,9 +2,8 @@
 
 
 #include "OrbitDynamicObject.h"
-#include "Components/SplineComponent.h"
-#include "Components/SplineMeshComponent.h"
 #include "DynamicOrbitsManager.h"
+#include "OrbitalObjectComponent.h"
 
 // Sets default values
 AOrbitDynamicObject::AOrbitDynamicObject()
@@ -34,6 +33,8 @@ void AOrbitDynamicObject::Tick(float DeltaTime)
 
 bool AOrbitDynamicObject::AppendPredictionPoint(FVector NewPoint, double TimeStep, bool Forced)
 {
+	// TODO: add argument of distance to the closest attractor, if pass min threshold then add point
+	// TODO: cull points that left behind (make array of SimTime for points?)
 	bool Result = false;
 	double DistanceToFirst = 0.;
 	double DistanceToLast = 0.;
@@ -88,14 +89,15 @@ bool AOrbitDynamicObject::AppendPredictionPoint(FVector NewPoint, double TimeSte
 	return Result;
 }
 
-void AOrbitDynamicObject::UpdatePredictionPath()
+void AOrbitDynamicObject::UpdateOrbitalMovement(const FVector& NewPosition, const FVector& NewVelocity)
 {
-	//if (PredictedData.PointsCount != SplineOrbitPointsCount)
-	//{
-	//	UE_LOG(LogTemp, Warning, TEXT("Prediction spline not fully populated for an update. Owner: %s"), *GetDebugName(this));
-	//	return;
-	//}
+	SetOrbitalPosition(NewPosition);
+	Velocity = NewVelocity;
+	LinkedComponent->UpdateActorPosition(NewPosition); // TODO: multiply by SimScale from Manager (cache in this class?)
+}
 
+void AOrbitDynamicObject::UpdatePredictionPath() const
+{
 	OnPredictionUpdate.Broadcast();
 }
 
@@ -105,7 +107,7 @@ void AOrbitDynamicObject::ClearPrediction()
 	PredictedData.PointsCount = 0;
 }
 
-void AOrbitDynamicObject::RecalculatePrediction()
+void AOrbitDynamicObject::CalculatePrediction()
 {
 	if (!Manager)
 	{

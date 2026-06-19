@@ -71,7 +71,7 @@ protected:
 
 	UPROPERTY(EditAnywhere)
 	FSplineVisuals SplineVisuals;
-	UPROPERTY(EditAnywhere, Category = "Orbital|Orbit Params", meta = (ClampMin = "0"))
+	UPROPERTY(EditAnywhere, Category = "Orbital", meta = (ClampMin = "0"))
 	int32 SplineOrbitPointsCount = 0;
 
 	UPROPERTY()

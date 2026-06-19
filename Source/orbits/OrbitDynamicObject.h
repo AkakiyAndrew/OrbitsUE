@@ -6,6 +6,7 @@
 #include "OrbitalBase.h"
 #include "OrbitDynamicObject.generated.h"
 
+class UOrbitalObjectComponent;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FPredictionUpdate);
 
 struct FPredictedData
@@ -42,10 +43,13 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Orbit Visuals | Prediction params")
 	int32 MaxPredictionPoints = 100;
 
+	// niagara component for ribbon
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Orbit Visuals")
+	class UNiagaraComponent* PathRibbonComponent;
 	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-	virtual void PostInitializeComponents();
+	virtual void PostInitializeComponents() override;
 
 private:
 	FPredictedData PredictedData;
@@ -56,18 +60,22 @@ public:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	FVector Velocity;
+	// ReSharper disable once CppUE4ProbableMemoryIssuesWithUObject
 	ADynamicOrbitsManager* Manager;
-
+	// ReSharper disable once CppUE4ProbableMemoryIssuesWithUObject
+	UOrbitalObjectComponent* LinkedComponent;
+	
 	//UFUNCTION(BlueprintCallable)
 	//void TogglePredictPathVisibility(bool Show);
-
+	
 	bool AppendPredictionPoint(FVector NewPoint, double TimeStep, bool Forced = false);
-	void UpdatePredictionPath();
+	void UpdateOrbitalMovement(const FVector& NewPosition, const FVector& NewVelocity);
+	void UpdatePredictionPath() const;
 	void ClearPrediction();
 	UFUNCTION(BlueprintCallable, Category = "Orbital")
-	void RecalculatePrediction();
+	void CalculatePrediction();
 	UFUNCTION(BlueprintCallable, Category = "Orbital")
-	void AddVelocity(FVector Added) { Velocity += Added; RecalculatePrediction(); };
+	void AddVelocity(const FVector Added) { Velocity += Added; CalculatePrediction(); };
 
 
 	UFUNCTION(BlueprintCallable, Category = "Orbital")
