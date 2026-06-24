@@ -3,30 +3,31 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "OrbitalBase.h"
 #include "GameFramework/Actor.h"
-#include "DynamicOrbitsManager.generated.h"
+#include "OrbitManager.generated.h"
 
-class AOrbitAttractorBase;
-class AOrbitDynamicObject;
+class UOrbitAttractorBaseComponent; // Changed from AOrbitAttractorBase
+class UOrbitDynamicObjectComponent; // Changed from AOrbitDynamicObject
 class UOrbitalObjectComponent;
 
 UCLASS()
-class ORBITS_API ADynamicOrbitsManager : public AActor
+class ORBITS_API AOrbitManager : public AActor
 {
 	GENERATED_BODY()
 	
 public:	
 	// Sets default values for this actor's properties
-	ADynamicOrbitsManager();
+	AOrbitManager();
 
 private:
 	UPROPERTY()
 	double TimeAccumulator = 0.f;
 	double TimePassed = 0.;
 	UPROPERTY()
-	TArray<AOrbitAttractorBase*> Attractors;
+	TArray<UOrbitAttractorBaseComponent*> Attractors; // Changed from AOrbitAttractorBase
 	UPROPERTY()
-	TArray<AOrbitDynamicObject*> DynamicObjects;
+	TArray<UOrbitDynamicObjectComponent*> DynamicObjects; // Changed from AOrbitDynamicObject
 	
 protected:
 	// Called when the game starts or when spawned
@@ -51,7 +52,7 @@ public:
 	FVector ComputeAcceleration(FVector Position, double Time = 0, bool DoLog=true) const;
 
 	UFUNCTION(BlueprintCallable)
-	void CalculateDynBodyPrediction(AOrbitDynamicObject* Body) const;
+	void CalculateDynBodyPrediction(UOrbitDynamicObjectComponent* Body) const; // Changed from AOrbitDynamicObject
 
 	UFUNCTION(BlueprintCallable, Category = "Orbital Manager")
 	void SetTimeScale(double NewTimeScale) { TimeScale = NewTimeScale; };
@@ -60,5 +61,5 @@ public:
 	void ToggleObjectsVisibility(bool NewState);
 	
 	// spawns dyn orbital object for "local" orbital component's host 
-	AOrbitDynamicObject* RegisterDynamicObject(const UOrbitalObjectComponent* OrbitalComponent);
+	void RegisterObject(UOrbitalBaseComponent* OrbitalComponent); // Changed from AOrbitDynamicObject
 };

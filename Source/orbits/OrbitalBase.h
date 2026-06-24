@@ -3,33 +3,37 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
+#include "Components/ActorComponent.h"
 #include "OrbitalBase.generated.h"
 
-UCLASS()
-class ORBITS_API AOrbitalBase : public AActor
+
+UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+class ORBITS_API UOrbitalBaseComponent : public UActorComponent
 {
 	GENERATED_BODY()
 	
 public:	
-	// Sets default values for this actor's properties
-	AOrbitalBase();
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+	// Sets default values for this component's properties
+	UOrbitalBaseComponent();
+
+	// Called when the game starts
+	virtual void BeginPlay() override;
 
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
-	TObjectPtr<USceneComponent> Root;
-
 	FVector OrbitalPosition;
 
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
-	virtual void PostInitializeComponents() override;
-
 public:
-	virtual void OnConstruction(const FTransform& Transform) override;
+	class AOrbitManager* Manager = nullptr;
+	
+	virtual void InitializeComponent() override; // Replaces PostInitializeComponents
+	// Called every frame
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+
 	UFUNCTION(BlueprintCallable, Category = "Orbital")
 	FVector GetOrbitalPosition() const { return OrbitalPosition; };
-	void SetOrbitalPosition(const FVector& NewPos) { OrbitalPosition = NewPos; };
+	void SetOrbitalPosition(const FVector& NewPos);
+	
+	// register itself in OrbitalManager, called in Actor's PostInitializeComponents?
+	UFUNCTION(BlueprintCallable, Category = "Orbital")
+	virtual void OrbitalInit();
 };

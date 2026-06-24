@@ -3,8 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "OrbitAttractorBase.h"
+#include "OrbitAttractorBase.h" // This will include UOrbitAttractorBaseComponent
 #include "OrbitAttractorKepler.generated.h"
+
+class USplineComponent;
+class USplineMeshComponent;
+class UMaterialInstanceDynamic;
 
 USTRUCT(BlueprintType)
 struct FOrbitalParameters
@@ -25,73 +29,58 @@ struct FOrbitalParameters
 	float SemiMajorAxis = 1000.f;
 
 	UPROPERTY(EditAnywhere, Category = "Orbit Params")
-	TObjectPtr<AOrbitAttractorBase> ParentObject = nullptr;
+	TObjectPtr<UOrbitAttractorBaseComponent> ParentObject = nullptr; // Changed to component type
 };
 
 USTRUCT(BlueprintType)
-struct FSplineVisuals
+struct FOrbitPathVisuals
 {
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, Category = "Orbit Visuals")
-	float SplineGlow = 30.f;
+	float Glow = 30.f;
 	UPROPERTY(EditAnywhere, Category = "Orbit Visuals")
-	float SplineBandWidth = 0.40f;
+	float BandWidth = 0.40f;
 	UPROPERTY(EditAnywhere, Category = "Orbit Visuals")
-	float SplineOpacity = 0.2f;
+	float Opacity = 0.2f;
 	UPROPERTY(EditAnywhere, Category = "Orbit Visuals")
-	FLinearColor SplineColor;
+	FColor Color = FColor::Black;
 	UPROPERTY(EditAnywhere, Category = "Orbit Visuals")
-	UMaterial* SplineMaterial;
+	UMaterial* Material;
 	UPROPERTY(EditAnywhere, Category = "Orbit Visuals")
-	UStaticMesh* SplineSectionMesh;
+	UStaticMesh* SectionMesh;
 };
 
-class USplineComponent;
-class USplineMeshComponent;
-class UMaterialInstanceDynamic;
 
-UCLASS()
-class ORBITS_API AOrbitAttractorKepler : public AOrbitAttractorBase
+UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+class ORBITS_API UOrbitAttractorKeplerComponent : public UOrbitAttractorBaseComponent // Changed to component
 {
 	GENERATED_BODY()
 	
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	TObjectPtr<UStaticMeshComponent> OrbitingBody;
-	
-	// Orbital
 	UPROPERTY(EditAnywhere, Category = "Orbital")
 	FOrbitalParameters OrbitalParameters;
-	TArray<FVector> CreateOrbitPoints();
+	void CreateOrbitPoints();
 	
-	// Spline Visuals
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
-	TObjectPtr<USplineComponent> SplinePath;
-
-	UPROPERTY(EditAnywhere)
-	FSplineVisuals SplineVisuals;
 	UPROPERTY(EditAnywhere, Category = "Orbital", meta = (ClampMin = "0"))
-	int32 SplineOrbitPointsCount = 0;
+	int32 PathPointsCount = 0;
 
-	UPROPERTY()
-	TArray<TObjectPtr<USplineMeshComponent>> SplineMeshes;
-	UPROPERTY()
-	TObjectPtr<UMaterialInstanceDynamic> SplineMaterialInstance;
-	bool bSplineMeshesSetUp = false;
-	void SplineMeshesSetUp();
-
+	UPROPERTY(EditAnywhere, Category = "Orbital")
+	FOrbitPathVisuals PathVisuals;
+	
 private:
 	double OrbitalPeriod;
+	TArray<FVector> PathPoints;
 
 protected:
-	virtual void PostInitializeComponents() override;
-	virtual void BeginPlay() override;
+	// Removed BeginPlay()
 
 public:
-	AOrbitAttractorKepler();
-	//virtual void OnConstruction(const FTransform& Transform) override;
-
+	virtual void InitializeComponent() override; // Changed from PostInitializeComponents
+	UOrbitAttractorKeplerComponent(); // Changed constructor name
+	// Removed OnConstruction
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
+		FActorComponentTickFunction* ThisTickFunction) override;
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "Orbital")
 	void UpdateOrbit();
 	void UpdateOrbitalPeriod();
@@ -101,5 +90,5 @@ public:
 
 	virtual FVector GetMassCenterPosition(double SimTime) const override;
 
-	int32 GetSplinePointsCount() const { return SplineOrbitPointsCount; }
+	int32 GetSplinePointsCount() const { return PathPointsCount; }
 };

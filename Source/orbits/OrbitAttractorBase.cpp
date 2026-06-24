@@ -3,39 +3,38 @@
 
 #include "OrbitAttractorBase.h"
 
+#include "OrbitManager.h"
+
 // Sets default values
-AOrbitAttractorBase::AOrbitAttractorBase()
+UOrbitAttractorBaseComponent::UOrbitAttractorBaseComponent()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = false;
+ 	// Set this component to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	PrimaryComponentTick.bCanEverTick = false;
 }
 
-// Called when the game starts or when spawned
-void AOrbitAttractorBase::BeginPlay()
+void UOrbitAttractorBaseComponent::InitializeComponent()
+{
+	Super::InitializeComponent();
+
+	if (GetOwner())
+	{
+		OrbitalPosition = GetOwner()->GetActorLocation();
+	}
+}
+
+void UOrbitAttractorBaseComponent::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	Manager->RegisterObject(this);
 }
 
-void AOrbitAttractorBase::PostInitializeComponents()
-{
-	Super::PostInitializeComponents();
-
-	OrbitalPosition = GetActorLocation();
-}
-
-// Called every frame
-void AOrbitAttractorBase::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-}
-
-FVector AOrbitAttractorBase::GetMassCenterPosition(double SimTime) const
+FVector UOrbitAttractorBaseComponent::GetMassCenterPosition(double SimTime) const
 {
 	return OrbitalPosition;
 }
 
-float AOrbitAttractorBase::GetBodyGM() const
+float UOrbitAttractorBaseComponent::GetBodyGM() const
 {
 	return GMass;
 }

@@ -6,27 +6,24 @@
 #include "OrbitalBase.h"
 #include "OrbitAttractorBase.generated.h"
 
-UCLASS()
-class ORBITS_API AOrbitAttractorBase : public AOrbitalBase
+UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+class ORBITS_API UOrbitAttractorBaseComponent : public UOrbitalBaseComponent
 {
 	GENERATED_BODY()
-	
+
 public:	
-	// Sets default values for this actor's properties
-	AOrbitAttractorBase();
-
-protected:
-	// Called when the game starts or when spawned
+	// Sets default values for this component's properties
+	UOrbitAttractorBaseComponent();
+	virtual void InitializeComponent() override;
+	
 	virtual void BeginPlay() override;
-	virtual void PostInitializeComponents();
-
+	
+protected:
+	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	double GMass;
 
 public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
 	UFUNCTION(BlueprintCallable)
 	virtual FVector GetMassCenterPosition(double SimTime) const;
 	UFUNCTION(BlueprintCallable)

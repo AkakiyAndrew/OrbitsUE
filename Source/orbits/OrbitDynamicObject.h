@@ -7,6 +7,7 @@
 #include "OrbitDynamicObject.generated.h"
 
 class UOrbitalObjectComponent;
+class UDynamicOrbitsManagerComponent; // Forward declaration for the component version
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FPredictionUpdate);
 
 struct FPredictedData
@@ -21,16 +22,20 @@ struct FPredictedData
 	//double TimeAccumulator = 0.;
 };
 
-class ADynamicOrbitsManager;
 
-UCLASS()
-class ORBITS_API AOrbitDynamicObject : public AOrbitalBase
+UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+class ORBITS_API UOrbitDynamicObjectComponent : public UOrbitalBaseComponent
 {
 	GENERATED_BODY()
 	
 public:	
-	// Sets default values for this actor's properties
-	AOrbitDynamicObject();
+	// Sets default values for this component's properties
+	UOrbitDynamicObjectComponent();
+	virtual void InitializeComponent() override;
+
+	// Called every frame
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	virtual void BeginPlay() override;
 
 protected:
 	// Dynamic Prediction Params
@@ -44,31 +49,24 @@ protected:
 	int32 MaxPredictionPoints = 100;
 
 	// niagara component for ribbon
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Orbit Visuals")
-	class UNiagaraComponent* PathRibbonComponent;
-	
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
-	virtual void PostInitializeComponents() override;
+	// UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Orbit Visuals")
+	// class UNiagaraComponent* PathRibbonComponent;
 
 private:
 	FPredictedData PredictedData;
-
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
 	
+public:	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	FVector Velocity;
 	// ReSharper disable once CppUE4ProbableMemoryIssuesWithUObject
-	ADynamicOrbitsManager* Manager;
+	AOrbitManager* Manager; // Changed to component
 	// ReSharper disable once CppUE4ProbableMemoryIssuesWithUObject
 	UOrbitalObjectComponent* LinkedComponent;
 	
 	//UFUNCTION(BlueprintCallable)
 	//void TogglePredictPathVisibility(bool Show);
-	
-	bool AppendPredictionPoint(FVector NewPoint, double TimeStep, bool Forced = false);
+	virtual void OrbitalInit() override;
+	bool AppendPredictionPoint(const FVector& NewPoint, double TimeStep, bool Forced = false);
 	void UpdateOrbitalMovement(const FVector& NewPosition, const FVector& NewVelocity);
 	void UpdatePredictionPath() const;
 	void ClearPrediction();
@@ -76,8 +74,7 @@ public:
 	void CalculatePrediction();
 	UFUNCTION(BlueprintCallable, Category = "Orbital")
 	void AddVelocity(const FVector Added) { Velocity += Added; CalculatePrediction(); };
-
-
+	
 	UFUNCTION(BlueprintCallable, Category = "Orbital")
 	FVector GetLastPredictedPoint() const { return PredictedData.LastPredictedPoint; };
 	UFUNCTION(BlueprintCallable)
@@ -88,4 +85,12 @@ public:
 	FPredictedData& GetPredictedData() { return PredictedData; };
 	int32 GetMaxPredictPoints() const { return MaxPredictionPoints; };
 
+	// for DynObject to change "local" position
+	// TODO: or rather change velocity? no, inconsistency could break simulation 
+	void UpdateActorPosition(const FVector& NewPos) const { GetOwner()->SetActorLocation(NewPos); };
+	// for "local" forces to change orbital velocity
+	// TODO: take into account bodies gravity zones
+	void AddOrbitalVelocity(const FVector& VelocityDelta);
+	// TODO: subscribe on owner's HitEvent to update orbital velocity
+	
 };

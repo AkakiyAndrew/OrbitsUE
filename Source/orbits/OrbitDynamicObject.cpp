@@ -2,36 +2,46 @@
 
 
 #include "OrbitDynamicObject.h"
-#include "DynamicOrbitsManager.h"
-#include "OrbitalObjectComponent.h"
+#include "OrbitManager.h"
 
 // Sets default values
-AOrbitDynamicObject::AOrbitDynamicObject()
+UOrbitDynamicObjectComponent::UOrbitDynamicObjectComponent()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+ 	// Set this component to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	PrimaryComponentTick.bCanEverTick = true;
 }
 
-// Called when the game starts or when spawned
-void AOrbitDynamicObject::BeginPlay()
+void UOrbitDynamicObjectComponent::InitializeComponent()
 {
-	Super::BeginPlay();	
-}
+	Super::InitializeComponent();
 
-void AOrbitDynamicObject::PostInitializeComponents()
-{
-	Super::PostInitializeComponents();
-
-	OrbitalPosition = GetActorLocation();
+	if (GetOwner())
+	{
+		OrbitalPosition = GetOwner()->GetActorLocation();
+	}
 }
 
 // Called every frame
-void AOrbitDynamicObject::Tick(float DeltaTime)
+void UOrbitDynamicObjectComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
-	Super::Tick(DeltaTime);
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 }
 
-bool AOrbitDynamicObject::AppendPredictionPoint(FVector NewPoint, double TimeStep, bool Forced)
+void UOrbitDynamicObjectComponent::BeginPlay()
+{
+	Super::BeginPlay();
+	
+	CalculatePrediction(); // request from manager after all Attractors are registered
+}
+
+void UOrbitDynamicObjectComponent::OrbitalInit()
+{
+	Super::OrbitalInit();
+	
+	Manager->RegisterObject(this);
+}
+
+bool UOrbitDynamicObjectComponent::AppendPredictionPoint(const FVector& NewPoint, const double TimeStep, const bool Forced)
 {
 	// TODO: add argument of distance to the closest attractor, if pass min threshold then add point
 	// TODO: cull points that left behind (make array of SimTime for points?)
@@ -85,29 +95,34 @@ bool AOrbitDynamicObject::AppendPredictionPoint(FVector NewPoint, double TimeSte
 	}
 
 	PredictedData.LastPredictedPoint = NewPoint;
+	PredictedData.LastPredictedSimTime += TimeStep;
 	//PredictionTimeAccumulator += TimeStep;
 	return Result;
 }
 
-void AOrbitDynamicObject::UpdateOrbitalMovement(const FVector& NewPosition, const FVector& NewVelocity)
+void UOrbitDynamicObjectComponent::UpdateOrbitalMovement(const FVector& NewPosition, const FVector& NewVelocity)
 {
 	SetOrbitalPosition(NewPosition);
 	Velocity = NewVelocity;
-	LinkedComponent->UpdateActorPosition(NewPosition); // TODO: multiply by SimScale from Manager (cache in this class?)
+
+	if (GetOwner())
+	{
+		GetOwner()->SetActorLocation(NewPosition);
+	}
 }
 
-void AOrbitDynamicObject::UpdatePredictionPath() const
+void UOrbitDynamicObjectComponent::UpdatePredictionPath() const
 {
 	OnPredictionUpdate.Broadcast();
 }
 
-void AOrbitDynamicObject::ClearPrediction()
+void UOrbitDynamicObjectComponent::ClearPrediction()
 {
 	PredictedData.PathPoints.Empty(PredictedData.PointsCount); 
 	PredictedData.PointsCount = 0;
 }
 
-void AOrbitDynamicObject::CalculatePrediction()
+void UOrbitDynamicObjectComponent::CalculatePrediction()
 {
 	if (!Manager)
 	{
@@ -117,4 +132,10 @@ void AOrbitDynamicObject::CalculatePrediction()
 
 	Manager->CalculateDynBodyPrediction(this);
 	OnPredictionUpdate.Broadcast();
+}
+
+void UOrbitDynamicObjectComponent::AddOrbitalVelocity(const FVector& VelocityDelta)
+{
+	OrbitalPosition += VelocityDelta;
+	CalculatePrediction();
 }

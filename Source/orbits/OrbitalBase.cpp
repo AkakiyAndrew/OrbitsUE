@@ -2,40 +2,56 @@
 
 
 #include "OrbitalBase.h"
-#include "Components/SplineComponent.h"
-#include "Components/SplineMeshComponent.h"
-#include "Kismet/KismetMaterialLibrary.h"
+
+#include "OrbitManager.h"
+#include "OrbitSubsystem.h"
 
 // Sets default values
-AOrbitalBase::AOrbitalBase()
+UOrbitalBaseComponent::UOrbitalBaseComponent()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
-
-	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
-	SetRootComponent(Root);
+ 	// Set this component to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	PrimaryComponentTick.bCanEverTick = true;
 }
 
-// Called when the game starts or when spawned
-void AOrbitalBase::BeginPlay()
+// Called when the game starts
+void UOrbitalBaseComponent::BeginPlay()
 {
 	Super::BeginPlay();
 	
 }
 
-void AOrbitalBase::PostInitializeComponents()
+void UOrbitalBaseComponent::InitializeComponent()
 {
-	Super::PostInitializeComponents();
-}
-
-void AOrbitalBase::OnConstruction(const FTransform& Transform)
-{
-	OrbitalPosition = GetActorLocation();
+	Super::InitializeComponent();
+	
+	OrbitalInit();
 }
 
 // Called every frame
-void AOrbitalBase::Tick(float DeltaTime)
+void UOrbitalBaseComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
-	Super::Tick(DeltaTime);
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+}
+
+void UOrbitalBaseComponent::SetOrbitalPosition(const FVector& NewPos)
+{
+	OrbitalPosition = NewPos;
+	
+	if (GetOwner()) // Added null check for owner
+	{
+		GetOwner()->SetActorLocation(OrbitalPosition);
+	}
+}
+
+void UOrbitalBaseComponent::OrbitalInit()
+{
+	Manager = GetWorld()->GetGameInstance()->GetSubsystem<UOrbitSubsystem>()->GetOrbitManager();
+	if (!Manager)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No OrbitManager assigned or found."));
+		return;
+	}
+	
+	OrbitalPosition = GetOwner()->GetActorLocation();
 }

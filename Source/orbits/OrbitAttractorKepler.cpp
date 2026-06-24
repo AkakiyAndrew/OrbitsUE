@@ -6,60 +6,53 @@
 #include "Components/SplineMeshComponent.h"
 #include "OrbitalBlueprintFunctionLibrary.h"
 #include "Kismet/KismetMaterialLibrary.h"
-#include "K2Node_AddComponent.h"
+#include "K2Node_AddComponent.h" // This include might not be needed anymore, but keeping for now.
 
 
-AOrbitAttractorKepler::AOrbitAttractorKepler()
+UOrbitAttractorKeplerComponent::UOrbitAttractorKeplerComponent()
 {
-	OrbitingBody = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("OrbitingBody"));
-	OrbitingBody->SetupAttachment(GetRootComponent());
-
-	SplinePath = CreateDefaultSubobject<USplineComponent>(TEXT("OrbitSpline"));
-	SplinePath->SetupAttachment(GetRootComponent());
-	//SplinePath->AttachToComponent(Root, FAttachmentTransformRules::KeepRelativeTransform);
-	SplinePath->SetClosedLoop(true);
+	PrimaryComponentTick.bCanEverTick = true; // Components don't tick by default unless specified
 }
 
-
-void AOrbitAttractorKepler::PostInitializeComponents()
+void UOrbitAttractorKeplerComponent::TickComponent(float DeltaTime, ELevelTick TickType,
+	FActorComponentTickFunction* ThisTickFunction)
 {
-	Super::PostInitializeComponents();
-	UpdateOrbitalPeriod();
-
-	SplineMeshesSetUp();
-}
-
-void AOrbitAttractorKepler::BeginPlay()
-{
-	Super::BeginPlay();
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	
-	if (!bSplineMeshesSetUp)
+	for (int32 PointIndex = 0; PointIndex <= PathPointsCount; PointIndex++)
 	{
-		SplineMeshes.Empty();
-
-		SplineMeshesSetUp();
-
+		if (PointIndex == PathPointsCount)
+		{
+			// from last to first
+			DrawDebugLine(GetWorld(), PathPoints[0], PathPoints[PointIndex], PathVisuals.Color, false, 0);
+		}
+		else
+		{
+			DrawDebugLine(GetWorld(), PathPoints[PointIndex], PathPoints[PointIndex+1], PathVisuals.Color, false, 0);
+		}
 	}
-	UpdateOrbit();
 }
 
-//void AOrbitAttractorKepler::OnConstruction(const FTransform& Transform)
-//{
-//}
 
-TArray<FVector> AOrbitAttractorKepler::CreateOrbitPoints()
+void UOrbitAttractorKeplerComponent::InitializeComponent()
 {
-	TArray<FVector> Result;
+	Super::InitializeComponent(); // Changed from PostInitializeComponents
+	UpdateOrbitalPeriod();
+}
 
+void UOrbitAttractorKeplerComponent::CreateOrbitPoints()
+{
 	if (!IsValid(OrbitalParameters.ParentObject))
 	{
-		return Result;
+		return;
 	}
 
-	for (int32 Num = 1; Num <= SplineOrbitPointsCount; Num++)
+	PathPoints.Empty();
+	
+	for (int32 Num = 1; Num <= PathPointsCount; Num++)
 	{
-		Result.Add(OrbitalParameters.ParentObject->GetMassCenterPosition(0.) + UOrbitalBlueprintFunctionLibrary::CalcOrbitalPosition(
-			static_cast<float>(Num) / SplineOrbitPointsCount,
+		PathPoints.Add(OrbitalParameters.ParentObject->GetMassCenterPosition(0.) + UOrbitalBlueprintFunctionLibrary::CalcOrbitalPosition(
+			static_cast<float>(Num) / PathPointsCount,
 			OrbitalParameters.SemiMajorAxis,
 			OrbitalParameters.Eccentrity,
 			OrbitalParameters.Inclination,
@@ -67,52 +60,34 @@ TArray<FVector> AOrbitAttractorKepler::CreateOrbitPoints()
 			OrbitalParameters.PeriapsisArgument
 		));
 	}
-	return Result;
 }
 
-void AOrbitAttractorKepler::UpdateOrbit()
+void UOrbitAttractorKeplerComponent::UpdateOrbit()
 {
-	if (!SplineVisuals.SplineSectionMesh or !SplineVisuals.SplineMaterial)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Spline visuals not provided."));
-		return;
-	}
-	
 	UpdateOrbitalPeriod();
-	TArray<FVector> OrbitPathPoints = CreateOrbitPoints();
-	if (OrbitPathPoints.Num() == 0)
+	CreateOrbitPoints();
+	if (PathPoints.Num() == 0)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("No spline orbital points for preview."));
 		return;
 	}
-
-	// recreate meshes, if different count
-	if (SplineMeshes.Num() != SplineOrbitPointsCount)
+	
+	if (GetOwner()) // null check for owner
 	{
-		SplineMeshesSetUp();
+		UpdateOrbitalPosition(0.);
 	}
-
-	SetActorLocation(OrbitalParameters.ParentObject->GetMassCenterPosition(0.f));
-	SplinePath->SetSplinePoints(OrbitPathPoints, ESplineCoordinateSpace::World, true);
-
-	// repurpose already created components
-	for (int32 PointIndex = 0; PointIndex < SplineOrbitPointsCount; PointIndex++)
+	
+#if WITH_EDITOR
+	for (int32 PointIndex = 0; PointIndex <= PathPointsCount; PointIndex++)
 	{
-		if (!SplineMeshes[PointIndex])
-			continue;
-		
-		// Start and End points/tangents
-		FVector StartPos, StartTangent, EndPos, EndTangent;
-		SplinePath->GetLocationAndTangentAtSplinePoint(PointIndex, StartPos, StartTangent, ESplineCoordinateSpace::Local);
-		SplinePath->GetLocationAndTangentAtSplinePoint(PointIndex + 1, EndPos, EndTangent, ESplineCoordinateSpace::Local);
-
-		SplineMeshes[PointIndex]->SetStartAndEnd(StartPos, StartTangent, EndPos, EndTangent, true);
+		DrawDebugSphere(GetWorld(), PathPoints[PointIndex], 10, 4, FColor::White, false, 3);
 	}
-
-	UpdateOrbitalPosition(0.);
+	
+#endif
+	
 }
 
-void AOrbitAttractorKepler::UpdateOrbitalPeriod()
+void UOrbitAttractorKeplerComponent::UpdateOrbitalPeriod()
 {
 	if (OrbitalParameters.ParentObject)
 		OrbitalPeriod = 2 * UE_DOUBLE_PI * FMath::Sqrt(
@@ -120,14 +95,12 @@ void AOrbitAttractorKepler::UpdateOrbitalPeriod()
 		);
 }
 
-void AOrbitAttractorKepler::UpdateOrbitalPosition(double SimTime)
+void UOrbitAttractorKeplerComponent::UpdateOrbitalPosition(double SimTime)
 {
-	OrbitalPosition = GetMassCenterPosition(SimTime);
-	OrbitingBody->SetWorldLocation(OrbitalPosition);
-	SetActorLocation(OrbitalParameters.ParentObject->GetMassCenterPosition(SimTime));
+	SetOrbitalPosition(GetMassCenterPosition(SimTime));
 }
 
-FVector AOrbitAttractorKepler::GetMassCenterPosition(double SimTime) const
+FVector UOrbitAttractorKeplerComponent::GetMassCenterPosition(double SimTime) const
 {
 	//UE_LOG(LogTemp, Log, TEXT("MassCenter, FMod: %f, Period: %f, SimTime: %f."), FMath::Fmod(SimTime, OrbitalPeriod), OrbitalPeriod, SimTime);
 	return OrbitalParameters.ParentObject->GetMassCenterPosition(SimTime) + UOrbitalBlueprintFunctionLibrary::CalcOrbitalPosition(
@@ -138,55 +111,4 @@ FVector AOrbitAttractorKepler::GetMassCenterPosition(double SimTime) const
 		OrbitalParameters.AscendingNode,
 		OrbitalParameters.PeriapsisArgument
 	);
-}
-
-
-void AOrbitAttractorKepler::SplineMeshesSetUp()
-{
-	// set up mesh material instance
-	if (!SplineMaterialInstance)
-	{
-		SplineMaterialInstance = UKismetMaterialLibrary::CreateDynamicMaterialInstance(this, SplineVisuals.SplineMaterial);
-	}
-
-	if (SplineMaterialInstance)
-	{
-		SplineMaterialInstance->SetVectorParameterValue(TEXT("Colour"), SplineVisuals.SplineColor);
-		SplineMaterialInstance->SetScalarParameterValue(TEXT("Glow"), SplineVisuals.SplineGlow);
-		SplineMaterialInstance->SetScalarParameterValue(TEXT("BandWidth"), SplineVisuals.SplineBandWidth);
-		SplineMaterialInstance->SetScalarParameterValue(TEXT("Opacity"), SplineVisuals.SplineOpacity);
-	}
-
-
-	// TODO: optimize to not delete & re-create components (check num before & after)
-	for (USplineMeshComponent* MeshComp : SplineMeshes)
-	{
-		if (MeshComp)
-		{
-			MeshComp->DestroyComponent();
-		}
-	}
-
-	SplineMeshes.SetNum(SplineOrbitPointsCount);
-
-	for (int32 i = 0; i < SplineOrbitPointsCount; i++)
-	{
-		USplineMeshComponent* SplineMesh = NewObject<USplineMeshComponent>(this);
-		SplineMesh->SetMobility(EComponentMobility::Movable); // TODO: set static, if parent object is immovable??
-
-		// Register and attach
-		SplineMesh->CreationMethod = EComponentCreationMethod::Native;
-		SplineMesh->RegisterComponent();
-		SplineMesh->AttachToComponent(SplinePath, FAttachmentTransformRules::KeepRelativeTransform);
-
-		SplineMesh->SetStaticMesh(SplineVisuals.SplineSectionMesh);
-		if (SplineMaterialInstance)
-		{
-			SplineMesh->SetMaterial(0, SplineMaterialInstance);
-		}
-
-		SplineMeshes[i] = SplineMesh;
-	}
-
-	bSplineMeshesSetUp = true;
 }
