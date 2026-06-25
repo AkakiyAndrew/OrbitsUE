@@ -14,17 +14,18 @@ UOrbitDynamicObjectComponent::UOrbitDynamicObjectComponent()
 void UOrbitDynamicObjectComponent::InitializeComponent()
 {
 	Super::InitializeComponent();
-
-	if (GetOwner())
-	{
-		OrbitalPosition = GetOwner()->GetActorLocation();
-	}
 }
 
 // Called every frame
 void UOrbitDynamicObjectComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	
+	for (int32 PointIndex = 1; PointIndex < PredictedData.PointsCount; PointIndex++)
+	{
+		DrawDebugLine(GetWorld(), PredictedData.PathPoints[PointIndex], PredictedData.PathPoints[PointIndex-1], FColor::Purple, false, 0);
+		DrawDebugSphere(GetWorld(), PredictedData.PathPoints[PointIndex], 10, 4, FColor::White, false, 0);
+	}
 }
 
 void UOrbitDynamicObjectComponent::BeginPlay()
@@ -37,11 +38,6 @@ void UOrbitDynamicObjectComponent::BeginPlay()
 void UOrbitDynamicObjectComponent::OrbitalInit()
 {
 	Super::OrbitalInit();
-	
-	if (Manager)
-	{
-		Manager->RegisterObject(this);
-	}
 }
 
 bool UOrbitDynamicObjectComponent::AppendPredictionPoint(const FVector& NewPoint, const double TimeStep, const bool Forced)

@@ -19,6 +19,7 @@ void UOrbitalBaseComponent::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	Manager->RegisterObject(this);
 }
 
 void UOrbitalBaseComponent::InitializeComponent()
@@ -57,5 +58,8 @@ void UOrbitalBaseComponent::OrbitalInit()
 		}
 	}
 	
-	OrbitalPosition = GetOwner()->GetActorLocation();
+	if (GetOwner())
+	{
+		OrbitalPosition = GetOwner()->GetActorLocation();
+	};
 }

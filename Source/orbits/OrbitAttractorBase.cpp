@@ -16,17 +16,15 @@ void UOrbitAttractorBaseComponent::InitializeComponent()
 {
 	Super::InitializeComponent();
 
-	if (GetOwner())
-	{
-		OrbitalPosition = GetOwner()->GetActorLocation();
-	}
+	// if (GetOwner())
+	// {
+	// 	OrbitalPosition = GetOwner()->GetActorLocation();
+	// }
 }
 
 void UOrbitAttractorBaseComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	Manager->RegisterObject(this);
 }
 
 FVector UOrbitAttractorBaseComponent::GetMassCenterPosition(double SimTime) const

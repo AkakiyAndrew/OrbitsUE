@@ -58,10 +58,6 @@ private:
 public:	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	FVector Velocity;
-	// ReSharper disable once CppUE4ProbableMemoryIssuesWithUObject
-	AOrbitManager* Manager; // Changed to component
-	// ReSharper disable once CppUE4ProbableMemoryIssuesWithUObject
-	UOrbitalObjectComponent* LinkedComponent;
 	
 	//UFUNCTION(BlueprintCallable)
 	//void TogglePredictPathVisibility(bool Show);
