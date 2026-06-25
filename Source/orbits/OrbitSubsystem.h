@@ -20,4 +20,5 @@ class ORBITS_API UOrbitSubsystem : public UGameInstanceSubsystem
 public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	AOrbitManager* GetOrbitManager() const {return Manager;};
+	void RegisterManager(AOrbitManager* ManagerPtr) {Manager = ManagerPtr;};
 };

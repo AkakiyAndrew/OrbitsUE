@@ -11,6 +11,7 @@ UOrbitalBaseComponent::UOrbitalBaseComponent()
 {
  	// Set this component to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryComponentTick.bCanEverTick = true;
+	bWantsInitializeComponent = true;
 }
 
 // Called when the game starts
@@ -46,7 +47,8 @@ void UOrbitalBaseComponent::SetOrbitalPosition(const FVector& NewPos)
 
 void UOrbitalBaseComponent::OrbitalInit()
 {
-	Manager = GetWorld()->GetGameInstance()->GetSubsystem<UOrbitSubsystem>()->GetOrbitManager();
+	auto subsystem = GetWorld()->GetGameInstance()->GetSubsystem<UOrbitSubsystem>();
+	Manager = subsystem->GetOrbitManager();
 	if (!Manager)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("No OrbitManager assigned or found."));

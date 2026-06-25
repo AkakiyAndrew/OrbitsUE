@@ -7,6 +7,7 @@
 #include "OrbitAttractorKepler.h"
 #include "Kismet/GameplayStatics.h"
 #include "OrbitDynamicObject.h"
+#include "OrbitSubsystem.h"
 
 // Sets default values
 AOrbitManager::AOrbitManager()
@@ -75,6 +76,13 @@ void AOrbitManager::Tick(float DeltaTime)
 		TimePassed += FixedStep;
 		TimeAccumulator -= FixedStep;
 	}
+}
+
+void AOrbitManager::PreInitializeComponents()
+{
+	Super::PreInitializeComponents();
+	auto subsystem = GetWorld()->GetGameInstance()->GetSubsystem<UOrbitSubsystem>();
+	subsystem->RegisterManager(this);
 }
 
 void AOrbitManager::Step(double TimeDelta, double Time)

@@ -19,20 +19,42 @@ void UOrbitAttractorKeplerComponent::TickComponent(float DeltaTime, ELevelTick T
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	
-	for (int32 PointIndex = 0; PointIndex <= PathPointsCount; PointIndex++)
+	if (!PathPoints.IsEmpty())
 	{
-		if (PointIndex == PathPointsCount)
+		FVector LocationOffset = ParentObjectComponent->GetMassCenterPosition(LastSimTIme);
+		for (int32 PointIndex = 1; PointIndex < PathPoints.Num(); PointIndex++)
 		{
-			// from last to first
-			DrawDebugLine(GetWorld(), PathPoints[0], PathPoints[PointIndex], PathVisuals.Color, false, 0);
-		}
-		else
-		{
-			DrawDebugLine(GetWorld(), PathPoints[PointIndex], PathPoints[PointIndex+1], PathVisuals.Color, false, 0);
+			DrawDebugLine(
+				GetWorld(), 
+				LocationOffset + PathPoints[PointIndex], 
+				LocationOffset + PathPoints[PointIndex-1], 
+				PathVisuals.Color, 
+				false, 
+				0
+				);
+			if (PointIndex == PathPointsCount-1)
+			{
+				// from last to first
+				DrawDebugLine(
+					GetWorld(), 
+					LocationOffset + PathPoints[PointIndex], 
+					LocationOffset + PathPoints[0], 
+					PathVisuals.Color, 
+					false, 
+					0
+					);
+			}
 		}
 	}
 }
 
+
+void UOrbitAttractorKeplerComponent::BeginPlay()
+{
+	Super::BeginPlay();
+	
+	UpdateOrbit();
+}
 
 void UOrbitAttractorKeplerComponent::InitializeComponent()
 {
@@ -42,7 +64,7 @@ void UOrbitAttractorKeplerComponent::InitializeComponent()
 
 void UOrbitAttractorKeplerComponent::CreateOrbitPoints()
 {
-	if (!IsValid(OrbitalParameters.ParentObject))
+	if (!IsValid(OrbitalParameters.ParentActor))
 	{
 		return;
 	}
@@ -51,7 +73,7 @@ void UOrbitAttractorKeplerComponent::CreateOrbitPoints()
 	
 	for (int32 Num = 1; Num <= PathPointsCount; Num++)
 	{
-		PathPoints.Add(OrbitalParameters.ParentObject->GetMassCenterPosition(0.) + UOrbitalBlueprintFunctionLibrary::CalcOrbitalPosition(
+		PathPoints.Add( UOrbitalBlueprintFunctionLibrary::CalcOrbitalPosition(
 			static_cast<float>(Num) / PathPointsCount,
 			OrbitalParameters.SemiMajorAxis,
 			OrbitalParameters.Eccentrity,
@@ -64,6 +86,13 @@ void UOrbitAttractorKeplerComponent::CreateOrbitPoints()
 
 void UOrbitAttractorKeplerComponent::UpdateOrbit()
 {
+	UpdateParentHierarchy();
+	if (!ParentObjectComponent)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Parent object is not an Attractor."));
+		return;
+	}
+	
 	UpdateOrbitalPeriod();
 	CreateOrbitPoints();
 	if (PathPoints.Num() == 0)
@@ -78,7 +107,7 @@ void UOrbitAttractorKeplerComponent::UpdateOrbit()
 	}
 	
 #if WITH_EDITOR
-	for (int32 PointIndex = 0; PointIndex <= PathPointsCount; PointIndex++)
+	for (int32 PointIndex = 0; PointIndex < PathPoints.Num(); PointIndex++)
 	{
 		DrawDebugSphere(GetWorld(), PathPoints[PointIndex], 10, 4, FColor::White, false, 3);
 	}
@@ -89,21 +118,31 @@ void UOrbitAttractorKeplerComponent::UpdateOrbit()
 
 void UOrbitAttractorKeplerComponent::UpdateOrbitalPeriod()
 {
-	if (OrbitalParameters.ParentObject)
+	if (ParentObjectComponent)
 		OrbitalPeriod = 2 * UE_DOUBLE_PI * FMath::Sqrt(
-			FMath::Pow(OrbitalParameters.SemiMajorAxis, 3) / (OrbitalParameters.ParentObject->GetBodyGM() + GetBodyGM())
+			FMath::Pow(OrbitalParameters.SemiMajorAxis, 3) / (ParentObjectComponent->GetBodyGM() + GetBodyGM())
 		);
+}
+
+void UOrbitAttractorKeplerComponent::UpdateParentHierarchy()
+{
+	ParentObjectComponent = OrbitalParameters.ParentActor->GetComponentByClass<UOrbitAttractorBaseComponent>();
+	if (UOrbitAttractorKeplerComponent* ParentKepler = Cast<UOrbitAttractorKeplerComponent>(ParentObjectComponent))
+	{
+		ParentKepler->UpdateParentHierarchy();
+	}
 }
 
 void UOrbitAttractorKeplerComponent::UpdateOrbitalPosition(double SimTime)
 {
 	SetOrbitalPosition(GetMassCenterPosition(SimTime));
+	LastSimTIme = SimTime;
 }
 
 FVector UOrbitAttractorKeplerComponent::GetMassCenterPosition(double SimTime) const
 {
 	//UE_LOG(LogTemp, Log, TEXT("MassCenter, FMod: %f, Period: %f, SimTime: %f."), FMath::Fmod(SimTime, OrbitalPeriod), OrbitalPeriod, SimTime);
-	return OrbitalParameters.ParentObject->GetMassCenterPosition(SimTime) + UOrbitalBlueprintFunctionLibrary::CalcOrbitalPosition(
+	return ParentObjectComponent->GetMassCenterPosition(SimTime) + UOrbitalBlueprintFunctionLibrary::CalcOrbitalPosition(
 		OrbitalParameters.StartingOffset + (FMath::Fmod(SimTime, OrbitalPeriod) / OrbitalPeriod),
 		OrbitalParameters.SemiMajorAxis,
 		OrbitalParameters.Eccentrity,

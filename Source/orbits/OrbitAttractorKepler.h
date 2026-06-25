@@ -28,8 +28,8 @@ struct FOrbitalParameters
 	UPROPERTY(EditAnywhere, Category = "Orbit Params", meta = (ClampMin = "1"))
 	float SemiMajorAxis = 1000.f;
 
-	UPROPERTY(EditAnywhere, Category = "Orbit Params")
-	TObjectPtr<UOrbitAttractorBaseComponent> ParentObject = nullptr; // Changed to component type
+	UPROPERTY(EditAnywhere, Category = "ORbit Params")
+	AActor* ParentActor = nullptr;
 };
 
 USTRUCT(BlueprintType)
@@ -62,7 +62,7 @@ protected:
 	FOrbitalParameters OrbitalParameters;
 	void CreateOrbitPoints();
 	
-	UPROPERTY(EditAnywhere, Category = "Orbital", meta = (ClampMin = "0"))
+	UPROPERTY(EditAnywhere, Category = "Orbital", meta = (ClampMin = "3"))
 	int32 PathPointsCount = 0;
 
 	UPROPERTY(EditAnywhere, Category = "Orbital")
@@ -70,12 +70,12 @@ protected:
 	
 private:
 	double OrbitalPeriod;
+	TObjectPtr<UOrbitAttractorBaseComponent> ParentObjectComponent = nullptr;
 	TArray<FVector> PathPoints;
-
-protected:
-	// Removed BeginPlay()
-
+	double LastSimTIme = 0.;
+	
 public:
+	virtual void BeginPlay() override;
 	virtual void InitializeComponent() override; // Changed from PostInitializeComponents
 	UOrbitAttractorKeplerComponent(); // Changed constructor name
 	// Removed OnConstruction
@@ -84,6 +84,7 @@ public:
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "Orbital")
 	void UpdateOrbit();
 	void UpdateOrbitalPeriod();
+	void UpdateParentHierarchy();
 
 	// To call from Manager's Tick
 	void UpdateOrbitalPosition(double SimTime);

@@ -9,15 +9,4 @@
 void UOrbitSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
-	
-	TArray<AActor*> Buf;
-	UGameplayStatics::GetAllActorsOfClass(this, AOrbitManager::StaticClass(), Buf);
-	if (Buf.Num() == 1)
-	{
-		Manager = Cast<AOrbitManager>(Buf[0]);
-	}
-	else
-	{
-		UE_LOG(LogActor, Error, TEXT("Wrong Manager's count."));
-	}
 }

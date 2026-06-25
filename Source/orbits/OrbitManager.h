@@ -33,6 +33,7 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+protected:
 	UPROPERTY(EditInstanceOnly)
 	double TimeScale = 1.;
 	UPROPERTY(EditInstanceOnly)
@@ -43,6 +44,7 @@ protected:
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+	virtual void PreInitializeComponents() override;
 
 	UFUNCTION(BlueprintCallable)
 	void Step(double TimeDelta, double Time);
