@@ -38,7 +38,10 @@ void UOrbitDynamicObjectComponent::OrbitalInit()
 {
 	Super::OrbitalInit();
 	
-	Manager->RegisterObject(this);
+	if (Manager)
+	{
+		Manager->RegisterObject(this);
+	}
 }
 
 bool UOrbitDynamicObjectComponent::AppendPredictionPoint(const FVector& NewPoint, const double TimeStep, const bool Forced)

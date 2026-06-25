@@ -81,8 +81,11 @@ void AOrbitManager::Tick(float DeltaTime)
 void AOrbitManager::PreInitializeComponents()
 {
 	Super::PreInitializeComponents();
-	auto subsystem = GetWorld()->GetGameInstance()->GetSubsystem<UOrbitSubsystem>();
-	subsystem->RegisterManager(this);
+	
+	if (UGameInstance* GameInstance = GetWorld()->GetGameInstance())
+	{
+		GameInstance->GetSubsystem<UOrbitSubsystem>()->RegisterManager(this);
+	}
 }
 
 void AOrbitManager::Step(double TimeDelta, double Time)

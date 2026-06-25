@@ -45,6 +45,11 @@ void UOrbitAttractorKeplerComponent::TickComponent(float DeltaTime, ELevelTick T
 					);
 			}
 		}
+		
+		for (int32 PointIndex = 0; PointIndex < PathPoints.Num(); PointIndex++)
+		{
+			DrawDebugSphere(GetWorld(), PathPoints[PointIndex], 10, 4, FColor::White, false, 0);
+		}
 	}
 }
 

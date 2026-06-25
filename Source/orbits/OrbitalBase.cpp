@@ -47,12 +47,14 @@ void UOrbitalBaseComponent::SetOrbitalPosition(const FVector& NewPos)
 
 void UOrbitalBaseComponent::OrbitalInit()
 {
-	auto subsystem = GetWorld()->GetGameInstance()->GetSubsystem<UOrbitSubsystem>();
-	Manager = subsystem->GetOrbitManager();
-	if (!Manager)
+	if (UGameInstance* GameInstance = GetWorld()->GetGameInstance())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("No OrbitManager assigned or found."));
-		return;
+		Manager = GameInstance->GetSubsystem<UOrbitSubsystem>()->GetOrbitManager();
+		if (!Manager)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("No OrbitManager assigned or found."));
+			return;
+		}
 	}
 	
 	OrbitalPosition = GetOwner()->GetActorLocation();
