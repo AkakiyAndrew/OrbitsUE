@@ -26,6 +26,8 @@ void UOrbitDynamicObjectComponent::TickComponent(float DeltaTime, ELevelTick Tic
 		DrawDebugLine(GetWorld(), PredictedData.PathPoints[PointIndex], PredictedData.PathPoints[PointIndex-1], FColor::Purple, false, 0);
 		DrawDebugSphere(GetWorld(), PredictedData.PathPoints[PointIndex], 10, 4, FColor::White, false, 0);
 	}
+	
+	DrawDebugSphere(GetWorld(), OrbitalPosition, 100, 4, FColor::Red, false, 0);
 }
 
 void UOrbitDynamicObjectComponent::BeginPlay()
@@ -108,6 +110,7 @@ void UOrbitDynamicObjectComponent::UpdateOrbitalMovement(const FVector& NewPosit
 	{
 		GetOwner()->SetActorLocation(NewPosition);
 	}
+	OnMovementUpdate.Broadcast();
 }
 
 void UOrbitDynamicObjectComponent::UpdatePredictionPath() const
@@ -128,13 +131,14 @@ void UOrbitDynamicObjectComponent::CalculatePrediction()
 		UE_LOG(LogTemp, Warning, TEXT("No OrbitManager assigned."));
 		return;
 	}
-
+	UE_LOG(LogTemp, Log, TEXT("Requesting prediction, pos: %s, vel: %s."), *OrbitalPosition.ToString(), *Velocity.ToString());
 	Manager->CalculateDynBodyPrediction(this);
+	UE_LOG(LogTemp, Log, TEXT("Got prediction, first point: %s."), *PredictedData.PathPoints[0].ToString());
 	OnPredictionUpdate.Broadcast();
 }
 
 void UOrbitDynamicObjectComponent::AddOrbitalVelocity(const FVector& VelocityDelta)
 {
-	OrbitalPosition += VelocityDelta;
+	Velocity += VelocityDelta;
 	CalculatePrediction();
 }

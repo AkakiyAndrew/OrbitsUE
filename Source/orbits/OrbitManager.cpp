@@ -98,7 +98,22 @@ void AOrbitManager::Step(double TimeDelta, double Time)
 		FVector Pos = Body->GetOrbitalPosition();
 		FVector Velocity = Body->Velocity;
 
+		// UE_LOG(LogTemp, Log, 
+		// 	TEXT("Step before, Pos: %s, Velocity: %s, Time: %f"), 
+		// 	*Pos.ToString(),
+		// 	*Velocity.ToString(),
+		// 	Time
+		// );
+
 		ComputeStep(Pos, Velocity, FixedStep, Time);
+
+		//UE_LOG(LogTemp, Log, TEXT("Computed Pos: %s"), *Pos.ToString());
+		
+		// UE_LOG(LogTemp, Log,
+		// 	TEXT("Step after, Pos: %s, Velocity: %s"),
+		// 	*Pos.ToString(),
+		// 	*Velocity.ToString()
+		// );
 		
 		Body->UpdateOrbitalMovement(Pos, Velocity);
 
@@ -160,7 +175,7 @@ void AOrbitManager::CalculateDynBodyPrediction(UOrbitDynamicObjectComponent* Bod
 
 	Body->ClearPrediction();
 
-	double Time = 0.;
+	double Time = TimePassed;
 	FVector TempBodyPosition = Body->GetOrbitalPosition();
 	FVector TempBodyVelocity = Body->Velocity;
 
@@ -182,17 +197,13 @@ void AOrbitManager::CalculateDynBodyPrediction(UOrbitDynamicObjectComponent* Bod
 
 void AOrbitManager::ToggleObjectsVisibility(bool NewState)
 {
-	for (UOrbitAttractorBaseComponent*& Attractor : Attractors) // Updated type
-	{
-		// Components don't have SetActorHiddenInGame. This logic needs to be re-evaluated.
-		// Attractor->SetActorHiddenInGame(NewState); 
-	}
-
-	for (UOrbitDynamicObjectComponent*& DynObj : DynamicObjects) // Updated type
-	{
-		// Components don't have SetActorHiddenInGame. This logic needs to be re-evaluated.
-		// DynObj->SetActorHiddenInGame(NewState);
-	}
+	// for (UOrbitAttractorBaseComponent*& Attractor : Attractors) // Updated type
+	// {
+	// }
+	//
+	// for (UOrbitDynamicObjectComponent*& DynObj : DynamicObjects) // Updated type
+	// {
+	// }
 }
 
 void AOrbitManager::RegisterObject(UOrbitalBaseComponent* OrbitalComponent) // Updated return type and function name

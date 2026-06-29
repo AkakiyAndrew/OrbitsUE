@@ -9,6 +9,8 @@
 class UOrbitalObjectComponent;
 class UDynamicOrbitsManagerComponent; // Forward declaration for the component version
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FPredictionUpdate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FMovementUpdate);
+
 
 struct FPredictedData
 {
@@ -59,6 +61,8 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	FVector Velocity;
 	
+	UPROPERTY(BlueprintAssignable, Category = "Orbital")
+	FMovementUpdate OnMovementUpdate;
 	//UFUNCTION(BlueprintCallable)
 	//void TogglePredictPathVisibility(bool Show);
 	virtual void OrbitalInit() override;
@@ -71,6 +75,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Orbital")
 	void AddVelocity(const FVector Added) { Velocity += Added; CalculatePrediction(); };
 	
+	
 	UFUNCTION(BlueprintCallable, Category = "Orbital")
 	FVector GetLastPredictedPoint() const { return PredictedData.LastPredictedPoint; };
 	UFUNCTION(BlueprintCallable)
@@ -78,6 +83,7 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Orbital")
 	FPredictionUpdate OnPredictionUpdate;
 
+	
 	FPredictedData& GetPredictedData() { return PredictedData; };
 	int32 GetMaxPredictPoints() const { return MaxPredictionPoints; };
 
