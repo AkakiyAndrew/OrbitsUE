@@ -53,6 +53,8 @@ protected:
 	// niagara component for ribbon
 	// UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Orbit Visuals")
 	// class UNiagaraComponent* PathRibbonComponent;
+	
+	// TODO: something to detect and process going into Attractor's gravity field
 
 private:
 	FPredictedData PredictedData;
