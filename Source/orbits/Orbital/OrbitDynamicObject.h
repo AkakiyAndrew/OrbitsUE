@@ -6,6 +6,8 @@
 #include "OrbitalBase.h"
 #include "OrbitDynamicObject.generated.h"
 
+class ACelestialBody;
+class IGravityAffected;
 class UOrbitalObjectComponent;
 class UDynamicOrbitsManagerComponent; // Forward declaration for the component version
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FPredictionUpdate);
@@ -58,6 +60,11 @@ protected:
 
 private:
 	FPredictedData PredictedData;
+	bool bInGravityField = false;
+	ACelestialBody* GravityAttractor = nullptr;
+	FTimerHandle GravityDirectionTimerHandle;
+	IGravityAffected* OwnerPtr;
+	float Mass = 100.f;
 	
 public:	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
@@ -75,7 +82,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Orbital")
 	void CalculatePrediction();
 	UFUNCTION(BlueprintCallable, Category = "Orbital")
-	void AddVelocity(const FVector Added) { Velocity += Added; CalculatePrediction(); };
+	// TODO: take into account bodies gravity zones
+	void AddOrbitalVelocity(const FVector& Delta);
 	
 	
 	UFUNCTION(BlueprintCallable, Category = "Orbital")
@@ -92,9 +100,17 @@ public:
 	// for DynObject to change "local" position
 	// TODO: or rather change velocity? no, inconsistency could break simulation 
 	void UpdateActorPosition(const FVector& NewPos) const { GetOwner()->SetActorLocation(NewPos); };
-	// for "local" forces to change orbital velocity
-	// TODO: take into account bodies gravity zones
-	void AddOrbitalVelocity(const FVector& VelocityDelta);
 	// TODO: subscribe on owner's HitEvent to update orbital velocity
 	
+	UFUNCTION()
+	void OnEnteringGravityField(AActor* OverlappedActor, AActor* OtherActor);
+	UFUNCTION()
+	void OnLeavingGravityField(AActor* OverlappedActor, AActor* OtherActor);
+	UFUNCTION()
+	void DirectInGravity();
+	
+	// for custom kinematics
+	void AddMass();
+	void DecreaseMass();
+	float GetMass() { return Mass; };
 };

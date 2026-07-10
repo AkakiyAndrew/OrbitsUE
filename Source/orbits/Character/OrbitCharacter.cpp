@@ -28,6 +28,8 @@ AOrbitCharacter::AOrbitCharacter()
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
+	
+	
 }
 
 // Called when the game starts or when spawned
@@ -123,7 +125,18 @@ void AOrbitCharacter::Look(const FInputActionValue& Value)
 	}
 }
 
-void AOrbitCharacter::SetGravityDirection(const FVector& GravityDir)
+void AOrbitCharacter::SetGravityDirection(const FVector& GravityDir) const
 {
 	GetCharacterMovement()->SetGravityDirection(GravityDir);
+}
+
+void AOrbitCharacter::MoveInGravity(const FVector& Delta)
+{
+	GetCapsuleComponent()->AddForce(Delta, NAME_None, true);
+}
+
+void AOrbitCharacter::RotateToGravity(const FVector& Direction)
+{
+	// GetCapsuleComponent()->SetEnableGravity(false);
+	SetGravityDirection(Direction);
 }

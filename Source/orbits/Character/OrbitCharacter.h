@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "orbits/Orbital/GravityAffected.h"
 #include "OrbitCharacter.generated.h"
 
 struct FInputActionValue;
@@ -13,7 +14,7 @@ class UCameraComponent;
 class UInputMappingContext;
 
 UCLASS()
-class ORBITS_API AOrbitCharacter : public ACharacter
+class ORBITS_API AOrbitCharacter : public ACharacter, public IGravityAffected
 {
 	GENERATED_BODY()
 
@@ -67,5 +68,8 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	
-	void SetGravityDirection(const FVector& GravityDir);
+	void SetGravityDirection(const FVector& GravityDir) const;
+	
+	virtual void MoveInGravity(const FVector& Delta) override;
+	virtual void RotateToGravity(const FVector& Direction) override;
 };

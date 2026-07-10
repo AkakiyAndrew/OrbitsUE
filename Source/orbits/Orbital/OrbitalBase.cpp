@@ -19,7 +19,10 @@ void UOrbitalBaseComponent::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	Manager->RegisterObject(this);
+	if (Manager)
+	{
+		Manager->RegisterObject(this);
+	}
 }
 
 void UOrbitalBaseComponent::InitializeComponent()

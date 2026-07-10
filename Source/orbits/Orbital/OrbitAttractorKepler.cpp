@@ -63,7 +63,7 @@ void UOrbitAttractorKeplerComponent::BeginPlay()
 
 void UOrbitAttractorKeplerComponent::InitializeComponent()
 {
-	Super::InitializeComponent(); // Changed from PostInitializeComponents
+	Super::InitializeComponent();
 	UpdateOrbitalPeriod();
 }
 
@@ -131,10 +131,13 @@ void UOrbitAttractorKeplerComponent::UpdateOrbitalPeriod()
 
 void UOrbitAttractorKeplerComponent::UpdateParentHierarchy()
 {
-	ParentObjectComponent = OrbitalParameters.ParentActor->GetComponentByClass<UOrbitAttractorBaseComponent>();
-	if (UOrbitAttractorKeplerComponent* ParentKepler = Cast<UOrbitAttractorKeplerComponent>(ParentObjectComponent))
+	if (OrbitalParameters.ParentActor)
 	{
-		ParentKepler->UpdateParentHierarchy();
+		ParentObjectComponent = OrbitalParameters.ParentActor->GetComponentByClass<UOrbitAttractorBaseComponent>();
+		if (UOrbitAttractorKeplerComponent* ParentKepler = Cast<UOrbitAttractorKeplerComponent>(ParentObjectComponent))
+		{
+			ParentKepler->UpdateParentHierarchy();
+		}
 	}
 }
 
@@ -147,12 +150,20 @@ void UOrbitAttractorKeplerComponent::UpdateOrbitalPosition(double SimTime)
 FVector UOrbitAttractorKeplerComponent::GetMassCenterPosition(double SimTime) const
 {
 	//UE_LOG(LogTemp, Log, TEXT("MassCenter, FMod: %f, Period: %f, SimTime: %f."), FMath::Fmod(SimTime, OrbitalPeriod), OrbitalPeriod, SimTime);
-	return ParentObjectComponent->GetMassCenterPosition(SimTime) + UOrbitalBlueprintFunctionLibrary::CalcOrbitalPosition(
-		OrbitalParameters.StartingOffset + (FMath::Fmod(SimTime, OrbitalPeriod) / OrbitalPeriod),
-		OrbitalParameters.SemiMajorAxis,
-		OrbitalParameters.Eccentrity,
-		OrbitalParameters.Inclination,
-		OrbitalParameters.AscendingNode,
-		OrbitalParameters.PeriapsisArgument
-	);
+	if (ParentObjectComponent)
+	{
+		return ParentObjectComponent->GetMassCenterPosition(SimTime) + UOrbitalBlueprintFunctionLibrary::CalcOrbitalPosition(
+			OrbitalParameters.StartingOffset + (FMath::Fmod(SimTime, OrbitalPeriod) / OrbitalPeriod),
+			OrbitalParameters.SemiMajorAxis,
+			OrbitalParameters.Eccentrity,
+			OrbitalParameters.Inclination,
+			OrbitalParameters.AscendingNode,
+			OrbitalParameters.PeriapsisArgument
+		);
+	}
+	else
+	{
+		return OrbitalPosition;
+	}
+		
 }

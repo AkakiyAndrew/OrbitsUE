@@ -53,7 +53,7 @@ struct FOrbitPathVisuals
 
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class ORBITS_API UOrbitAttractorKeplerComponent : public UOrbitAttractorBaseComponent // Changed to component
+class ORBITS_API UOrbitAttractorKeplerComponent : public UOrbitAttractorBaseComponent
 {
 	GENERATED_BODY()
 	
@@ -75,12 +75,11 @@ private:
 	double LastSimTIme = 0.;
 	
 public:
+	UOrbitAttractorKeplerComponent();
 	virtual void BeginPlay() override;
-	virtual void InitializeComponent() override; // Changed from PostInitializeComponents
-	UOrbitAttractorKeplerComponent(); // Changed constructor name
-	// Removed OnConstruction
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
-		FActorComponentTickFunction* ThisTickFunction) override;
+	virtual void InitializeComponent() override;
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "Orbital")
 	void UpdateOrbit();
 	void UpdateOrbitalPeriod();

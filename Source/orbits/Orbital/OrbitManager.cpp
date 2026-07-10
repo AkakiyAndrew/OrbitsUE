@@ -21,37 +21,6 @@ AOrbitManager::AOrbitManager()
 void AOrbitManager::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	// The following logic needs to be re-evaluated as AOrbitDynamicObject and AOrbitAttractorBase are now components.
-	// Components are not found directly by GetAllActorsOfClass.
-	// A new mechanism for registering or discovering these components will be needed.
-
-	// TArray<AActor*> Buf;
-	// UGameplayStatics::GetAllActorsOfClass(this, AOrbitDynamicObject::StaticClass(), Buf);
-	// for (AActor*& Actor : Buf)
-	// {
-	// 	DynamicObjects.Add(Cast<UOrbitDynamicObjectComponent>(Actor)); // This cast will fail
-	// }
-	// Buf.Empty();
-
-	// UGameplayStatics::GetAllActorsOfClass(this, AOrbitAttractorBase::StaticClass(), Buf);
-	// for (AActor*& Actor : Buf)
-	// {
-	// 	Attractors.Add(Cast<UOrbitAttractorBaseComponent>(Actor)); // This cast will fail
-	// }
-	// Buf.Empty();
-
-	
-	
-	// first (big) prediction for each dynamic object
-	// for (UOrbitDynamicObjectComponent*& Body : DynamicObjects) // Updated type
-	// {
-	// 	if (Body) // Ensure Body is valid
-	// 	{
-	// 		Body->Manager = this;
-	// 		CalculateDynBodyPrediction(Body);
-	// 	}
-	// }
 }
 
 // Called every frame
