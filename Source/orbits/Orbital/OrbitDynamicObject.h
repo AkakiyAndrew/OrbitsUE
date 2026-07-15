@@ -12,7 +12,7 @@ class UOrbitalObjectComponent;
 class UDynamicOrbitsManagerComponent; // Forward declaration for the component version
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FPredictionUpdate);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FMovementUpdate);
-
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FGravityChanged, bool, NewState);
 
 struct FPredictedData
 {
@@ -60,7 +60,7 @@ protected:
 
 private:
 	FPredictedData PredictedData;
-	bool bInGravityField = false;
+	bool bOrbitMovable = true;
 	ACelestialBody* GravityAttractor = nullptr;
 	FTimerHandle GravityDirectionTimerHandle;
 	IGravityAffected* OwnerPtr;
@@ -108,9 +108,13 @@ public:
 	void OnLeavingGravityField(AActor* OverlappedActor, AActor* OtherActor);
 	UFUNCTION()
 	void DirectInGravity();
+	ACelestialBody* GetAttractor() const { return GravityAttractor; };
+	FGravityChanged OnGravityChanged;
+	void MarkAsMovable() { bOrbitMovable = true; }; // CalculatePrediction(); };
 	
 	// for custom kinematics
 	void AddMass();
 	void DecreaseMass();
 	float GetMass() { return Mass; };
+	
 };

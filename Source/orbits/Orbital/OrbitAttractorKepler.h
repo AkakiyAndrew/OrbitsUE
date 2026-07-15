@@ -89,6 +89,7 @@ public:
 	void UpdateOrbitalPosition(double SimTime);
 
 	virtual FVector GetMassCenterPosition(double SimTime) const override;
+	FVector GetInstantVelocity() const;
 
 	int32 GetSplinePointsCount() const { return PathPointsCount; }
 };

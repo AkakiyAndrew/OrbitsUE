@@ -29,8 +29,11 @@ void UOrbitDynamicObjectComponent::InitializeComponent()
 			UE_LOG(LogTemp, Error, TEXT("DynObject Owner doesn't implements IGravityAffected: %s."), *GetOwner()->GetName())
 		}
 		OwnerPtr = Cast<IGravityAffected>(GetOwner());
+				
 		// subscribe to check overlaps with CelestialBodies
-		//GetOwner()->OnActorBeginOverlap.AddDynamic(this, &UOrbitDynamicObjectComponent::OnEnteringGravityField);
+		// TODO: make check on game start somehow
+		GetOwner()->OnActorBeginOverlap.AddDynamic(this, &UOrbitDynamicObjectComponent::OnEnteringGravityField);
+		GetOwner()->OnActorEndOverlap.AddDynamic(this, &UOrbitDynamicObjectComponent::OnLeavingGravityField);
 	}
 }
 
@@ -52,6 +55,16 @@ void UOrbitDynamicObjectComponent::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	if (GetOwner())
+	{
+		// one-time check at game start
+		TArray<AActor*> Overlapping;
+		GetOwner()->GetOverlappingActors(Overlapping, ACelestialBody::StaticClass());
+		if (Overlapping.Num() == 1)
+		{
+			OnEnteringGravityField(GetOwner(), Overlapping[0]);
+		}
+	}
 	CalculatePrediction(); // request from manager after all Attractors are registered
 }
 
@@ -62,7 +75,7 @@ void UOrbitDynamicObjectComponent::OrbitalInit()
 
 bool UOrbitDynamicObjectComponent::AppendPredictionPoint(const FVector& NewPoint, const double TimeStep, const bool Forced)
 {
-	if (bInGravityField)
+	if (!bOrbitMovable)
 	{
 		return true;
 	}
@@ -110,7 +123,7 @@ bool UOrbitDynamicObjectComponent::AppendPredictionPoint(const FVector& NewPoint
 
 void UOrbitDynamicObjectComponent::UpdateOrbitalMovement(const FVector& NewPosition, const FVector& NewVelocity)
 {
-	if (!GetOwner())
+	if (!GetOwner() || !bOrbitMovable)
 	{
 		return;
 	}
@@ -128,6 +141,17 @@ void UOrbitDynamicObjectComponent::UpdateOrbitalMovement(const FVector& NewPosit
 		{
 			// bounce off celestial body with velocity reduction
 			Velocity = Velocity.MirrorByVector(Hit.Normal) * 0.5;
+			
+			// try to land object on surface
+			if (OwnerPtr->TryLand(Velocity.Length()))
+			{
+				bOrbitMovable = false;
+				ClearPrediction();
+				UE_LOG(LogTemp, Log, TEXT("Landed: %s"), *GetOwner()->GetName());
+			}
+			// TODO: if landed, mark as non-orbit-updateable 
+			// TODO: for non-characters, how to mark them back? check on another hit?
+			// TODO: yes, mark it when hitted by another non-marked object
 		}
 		else if (UOrbitDynamicObjectComponent* AnotherComponent = Cast<UOrbitDynamicObjectComponent>(Hit.GetActor()->GetComponentByClass(StaticClass())))
 		{
@@ -140,6 +164,7 @@ void UOrbitDynamicObjectComponent::UpdateOrbitalMovement(const FVector& NewPosit
 			float Impulse = -(1 + Elasticy) * ClosingSpeed / (1/Mass + 1/AnotherComponent->GetMass());
 
 			AddOrbitalVelocity(Impulse * Hit.Normal / Mass);
+			AnotherComponent->MarkAsMovable();
 			AnotherComponent->AddOrbitalVelocity(-1 * Impulse * Hit.Normal / AnotherComponent->GetMass());
 		}
 		
@@ -176,6 +201,11 @@ void UOrbitDynamicObjectComponent::CalculatePrediction()
 		return;
 	}
 	
+	if (!bOrbitMovable)
+	{
+		return;
+	}
+	
 	UE_LOG(LogTemp, Log, TEXT("Requesting prediction, pos: %s, vel: %s."), *OrbitalPosition.ToString(), *Velocity.ToString());
 	Manager->CalculateDynBodyPrediction(this);
 	UE_LOG(LogTemp, Log, TEXT("Got prediction, first point: %s."), *PredictedData.PathPoints[0].ToString());
@@ -193,9 +223,10 @@ void UOrbitDynamicObjectComponent::OnEnteringGravityField(AActor* OverlappedActo
 	if (ACelestialBody* Body = Cast<ACelestialBody>(OtherActor))
 	{
 		GravityAttractor = Body;
-		bInGravityField = true;
 		GetWorld()->GetTimerManager().SetTimer(GravityDirectionTimerHandle, this, &UOrbitDynamicObjectComponent::DirectInGravity, 0.2f, true);
-		ClearPrediction();
+		// ClearPrediction();
+		// TODO: for character, make OnEnteringGravity delegate, so its SkelMesh began to "fall" (animation variable)
+		OnGravityChanged.Broadcast(false);
 		
 		UE_LOG(LogTemp, Log, TEXT("Entering grav field."));
 		DrawDebugSphere(GetWorld(), OrbitalPosition, 100, 4, FColor::Green, false, 2);
@@ -209,14 +240,17 @@ void UOrbitDynamicObjectComponent::OnLeavingGravityField(AActor* OverlappedActor
 		return;
 	}
 	
-	bInGravityField = false;
+	// TODO: calculate from kepler attractor its velocity at given SimTime
+	// TODO: move into Jump() for Character
+	//UpdateOrbitalMovement(GetOwner()->GetActorLocation(), GravityAttractor->GetOrbitComponent()->GetInstantVelocity());
+	
 	GravityAttractor = nullptr;
 	GetWorld()->GetTimerManager().ClearTimer(GravityDirectionTimerHandle);
 	
-	// TODO: calculate from kepler attractor its velocity at given SimTime
-	//UpdateOrbitalMovement(GetOwner()->GetActorLocation(), )
+	// TODO: call Character's switch to zerogravity controls (input mapping)
 	
 	CalculatePrediction();
+	OnGravityChanged.Broadcast(false);
 	
 	UE_LOG(LogTemp, Log, TEXT("Leaving grav field."));
 	DrawDebugSphere(GetWorld(), OrbitalPosition, 100, 4, FColor::Orange, false, 2);
@@ -225,12 +259,14 @@ void UOrbitDynamicObjectComponent::OnLeavingGravityField(AActor* OverlappedActor
 void UOrbitDynamicObjectComponent::DirectInGravity()
 {
 	FVector AttractorPos = GravityAttractor->GetOrbitComponent()->GetOrbitalPosition();
-	FVector CurrentPos = OrbitalPosition;
+	FVector CurrentPos = GetOwner()->GetActorLocation();
 	FVector Dir = (AttractorPos - CurrentPos).GetSafeNormal();
 	
-	float GravityStrength = (AttractorPos - CurrentPos).Length() / GravityAttractor->GetOrbitComponent()->GetGravityFieldRadius() * GravityAttractor->GetOrbitComponent()->GetGravityStrength();
+	//float GravityStrength = (AttractorPos - CurrentPos).Length() / GravityAttractor->GetOrbitComponent()->GetGravityFieldRadius() * GravityAttractor->GetOrbitComponent()->GetGravityStrength();
 	
 	// add to Velocity instead?
 	//OwnerPtr->MoveInGravity(Dir * GravityStrength);
 	OwnerPtr->RotateToGravity(Dir);
+	UE_LOG(LogTemp, Log, TEXT("Directing in gravity: %s"), *Dir.ToString());
+	DrawDebugDirectionalArrow(GetWorld(), OrbitalPosition, OrbitalPosition + Dir*200, 5, FColor::Blue, false, 0.5);
 }

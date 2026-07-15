@@ -58,7 +58,8 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Orbital Manager")
 	void SetTimeScale(double NewTimeScale) { TimeScale = NewTimeScale; };
-
+	double GetTimeStep() const { return FixedStep * SimScale; }
+	
 	UFUNCTION(BlueprintCallable, Category = "Orbital Manager")
 	void ToggleObjectsVisibility(bool NewState);
 	

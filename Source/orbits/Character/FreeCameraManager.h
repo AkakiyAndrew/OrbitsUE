@@ -16,4 +16,6 @@ class ORBITS_API AFreeCameraManager : public APlayerCameraManager
 
 	AFreeCameraManager(const FObjectInitializer& ObjectInitializer);
 	
+public:
+	void ToggleFreeCameraMode(bool IsLanded);
 };

@@ -7,6 +7,7 @@
 #include "OrbitalBlueprintFunctionLibrary.h"
 #include "Kismet/KismetMaterialLibrary.h"
 #include "K2Node_AddComponent.h" // This include might not be needed anymore, but keeping for now.
+#include "OrbitManager.h"
 
 
 UOrbitAttractorKeplerComponent::UOrbitAttractorKeplerComponent()
@@ -166,4 +167,9 @@ FVector UOrbitAttractorKeplerComponent::GetMassCenterPosition(double SimTime) co
 		return OrbitalPosition;
 	}
 		
+}
+
+FVector UOrbitAttractorKeplerComponent::GetInstantVelocity() const
+{
+	return (GetMassCenterPosition(LastSimTIme + Manager->GetTimeStep()) - GetMassCenterPosition(LastSimTIme)) / Manager->GetTimeStep();
 }

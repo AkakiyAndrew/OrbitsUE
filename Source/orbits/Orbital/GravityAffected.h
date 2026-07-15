@@ -22,6 +22,6 @@ class ORBITS_API IGravityAffected
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-	virtual void MoveInGravity(const FVector& Delta) {};
 	virtual void RotateToGravity(const FVector& Direction) {};
+	virtual bool TryLand(double Speed) { return false; };
 };

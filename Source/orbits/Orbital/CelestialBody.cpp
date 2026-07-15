@@ -18,13 +18,13 @@ ACelestialBody::ACelestialBody()
 	
 	OrbitComponent = CreateDefaultSubobject<UOrbitAttractorKeplerComponent>(TEXT("OrbitComponent"));
 	GravityField = CreateDefaultSubobject<USphereComponent>(TEXT("GravityField"));
+	GravityField->SetupAttachment(RootComponent);
 }
 
 // Called when the game starts or when spawned
 void ACelestialBody::BeginPlay()
 {
 	Super::BeginPlay();
-	
 }
 
 void ACelestialBody::PostInitializeComponents()
