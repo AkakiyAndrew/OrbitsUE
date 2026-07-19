@@ -23,16 +23,19 @@ AOrbitCharacter::AOrbitCharacter()
 	OrbitComponent = CreateDefaultSubobject<UOrbitDynamicObjectComponent>(TEXT("OrbitComponent"));
 	GetCapsuleComponent()->SetEnableGravity(false);
 	
+	CameraRoot = CreateDefaultSubobject<USceneComponent>(TEXT("CameraRoot"));
+	CameraRoot->SetupAttachment(RootComponent, FName("headSocket"));
+	PitchPivot = CreateDefaultSubobject<USceneComponent>(TEXT("PitchPivot"));
+	PitchPivot->SetupAttachment(CameraRoot);
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
-	Camera->SetupAttachment(RootComponent);
-	Camera->bUsePawnControlRotation = true; // Camera rotates based on the Pawn's Control Rotation
-
+	Camera->SetupAttachment(PitchPivot);
+	Camera->bUsePawnControlRotation = false; // Camera rotated manually
+	
+	
 	// Disable these so the Controller doesn't force the Actor back to World-Up alignment
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
-	
-	
 }
 
 // Called when the game starts or when spawned
@@ -40,14 +43,42 @@ void AOrbitCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	OnActorBeginOverlap.AddDynamic(this, &ThisClass::OnEnteringGravityField);
+	OnActorEndOverlap.AddDynamic(this, &ThisClass::OnLeavingGravityField);
+	
+	// one-time check at game start
+	TArray<AActor*> Overlapping;
+	GetOverlappingActors(Overlapping, ACelestialBody::StaticClass());
+	if (Overlapping.Num() == 1)
+	{
+		OnEnteringGravityField(this, Overlapping[0]);
+	}
+	
 	//Add Input Mapping Context
-	ToggleInputMode(bInGravity);
+	ToggleInputMode(bOnSurface);
+	CameraYaw = CameraRoot->GetRelativeRotation().Yaw;
+	CameraPitch = PitchPivot->GetRelativeRotation().Pitch;
 }
 
 // Called every frame
 void AOrbitCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	
+	if (GravityAttractor)
+	{
+		DirectInGravity();
+	}
+	
+	if (GEngine)
+	{
+		// Arguments: Key (-1 prevents overwriting), TimeToDisplay (sec), Color, Text
+		// FText::Format(TEXT(""), CameraYaw);
+		GEngine->AddOnScreenDebugMessage(1, 0, FColor::Cyan, FString::Printf(TEXT("CameraYaw: %f"), CameraYaw));
+		GEngine->AddOnScreenDebugMessage(2, 0, FColor::Cyan, FString::Printf(TEXT("CameraPitch: %f"), CameraPitch));
+		GEngine->AddOnScreenDebugMessage(3, 0, FColor::Cyan, FString::Printf(TEXT("CameraRoll: %f"), CameraRoot->GetRelativeRotation().Roll));
+	}
+
 }
 
 // Called to bind functionality to input
@@ -75,7 +106,7 @@ void AOrbitCharacter::Move(const FInputActionValue& Value)
 
 	if (Controller != nullptr)
 	{
-		if (bInGravity)
+		if (bOnSurface)
 		{
 			// on-surface movement
 			const FRotator Rotation = Controller->GetControlRotation();
@@ -87,8 +118,8 @@ void AOrbitCharacter::Move(const FInputActionValue& Value)
 			// get right vector 
 			const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 			
-			AddMovementInput(ForwardDirection, MovementVector.Y);
-			AddMovementInput(RightDirection, MovementVector.X);
+			AddMovementInput(Camera->GetForwardVector(), MovementVector.Y);
+			AddMovementInput(Camera->GetRightVector(), MovementVector.X);
 		}
 		else
 		{	
@@ -114,26 +145,37 @@ void AOrbitCharacter::Look(const FInputActionValue& Value)
 
 	if (Controller != nullptr)
 	{
-		if (bInGravity)
-		{
-			// add yaw and pitch input to controller
-			AddControllerYawInput(LookAxisVector.X);
-			AddControllerPitchInput(LookAxisVector.Y);
-		}
-		else
-		{
-			// Create a delta rotation from the input. 
-			// FRotator params are (Pitch, Yaw, Roll). 
-			// Note: You may need to negate Y (Pitch) depending on your Input Mapping Context settings.
-			FRotator DeltaRotation(LookAxisVector.Y, LookAxisVector.X, LookAxisVector.Z);
+		CameraYaw += LookAxisVector.X; // * Sensitivity;
 
-			// TODO: can use this place to clamp / smooth rotation speed
-			// Apply the rotation relative to the Actor's current local transform
-			AddActorLocalRotation(DeltaRotation);
-
-			// Update the Controller rotation to match the Actor so the Camera remains synced
-			Controller->SetControlRotation(GetActorRotation());
-		}
+		CameraPitch += LookAxisVector.Y; // * Sensitivity;
+		if (bOnSurface)
+			CameraPitch = FMath::Clamp(CameraPitch, -89.f, 89.f);
+		
+		CameraRoot->SetRelativeRotation(FRotator(0, CameraYaw, 0));
+		PitchPivot->SetRelativeRotation(FRotator(CameraPitch, 0, 0));
+		AddActorLocalRotation({0, 0, LookAxisVector.Z});
+		
+		
+		// if (bOnSurface)
+		// {
+		// add yaw and pitch input to controller
+		// AddControllerYawInput(LookAxisVector.X);
+		// AddControllerPitchInput(LookAxisVector.Y);
+		// }
+		// else
+		// {
+			// // Create a delta rotation from the input. 
+			// // FRotator params are (Pitch, Yaw, Roll). 
+			// // Note: You may need to negate Y (Pitch) depending on your Input Mapping Context settings.
+			// FRotator DeltaRotation(LookAxisVector.Y, LookAxisVector.X, LookAxisVector.Z);
+			//
+			// // TODO: can use this place to clamp / smooth rotation speed
+			// // Apply the rotation relative to the Actor's current local transform
+			// AddActorLocalRotation(DeltaRotation);
+			//
+			// // Update the Controller rotation to match the Actor so the Camera remains synced
+			// Controller->SetControlRotation(GetActorRotation());
+		// }
 	}
 }
 
@@ -142,8 +184,17 @@ void AOrbitCharacter::Look(const FInputActionValue& Value)
 // 	GetCapsuleComponent()->AddForce(Delta, NAME_None, true);
 // }
 
-void AOrbitCharacter::RotateToGravity(const FVector& Direction)
+void AOrbitCharacter::DirectInGravity()
 {
+	FVector AttractorPos = GravityAttractor->GetOrbitComponent()->GetOrbitalPosition();
+	FVector CurrentPos = GetActorLocation();
+	FVector Direction = (AttractorPos - CurrentPos).GetSafeNormal();
+	
+	// DrawDebugSphere(GetWorld(), AttractorPos, 100, 4, FColor::Purple, false, 0);
+	// DrawDebugSphere(GetWorld(), CurrentPos, 100, 4, FColor::Purple, false, 0);
+	
+	//float GravityStrength = (AttractorPos - CurrentPos).Length() / GravityAttractor->GetOrbitComponent()->GetGravityFieldRadius() * GravityAttractor->GetOrbitComponent()->GetGravityStrength();
+	
 	GetCharacterMovement()->SetGravityDirection(Direction);
 	// rotate character "upward" relatively to current local gravity direction
 	FQuat Align = FQuat::FindBetweenNormals(
@@ -151,6 +202,18 @@ void AOrbitCharacter::RotateToGravity(const FVector& Direction)
 		-Direction
 		);
 	SetActorRotation(Align * GetActorQuat());
+	
+	// FRotator NewControllerRotation = Controller->GetControlRotation();
+	// NewControllerRotation.Roll = GetActorRotation().Roll;
+	// Controller->SetControlRotation(NewControllerRotation);
+	
+	UE_LOG(LogTemp, Log, TEXT("Directing in gravity: %s"), *Direction.ToString());
+	DrawDebugDirectionalArrow(GetWorld(), CurrentPos, CurrentPos + Direction*200, 5, FColor::Blue, false, 0.5);
+	
+	// if (Controller)
+	// {
+	// 	AddControllerRollInput((Align * GetActorQuat()).Rotator().Roll);
+	// }
 }
 
 void AOrbitCharacter::ToggleInputMode(bool IsLanded)
@@ -164,7 +227,7 @@ void AOrbitCharacter::ToggleInputMode(bool IsLanded)
 		
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
-			if (bInGravity)
+			if (bOnSurface)
 			{
 				Subsystem->RemoveMappingContext(MappingContextSpace);
 				Subsystem->AddMappingContext(MappingContextSurface, 0);
@@ -178,6 +241,44 @@ void AOrbitCharacter::ToggleInputMode(bool IsLanded)
 	}
 }
 
+void AOrbitCharacter::OnEnteringGravityField(AActor* OverlappedActor, AActor* OtherActor)
+{
+	if (ACelestialBody* Body = Cast<ACelestialBody>(OtherActor))
+	{
+		GravityAttractor = Body;
+		//GetWorld()->GetTimerManager().SetTimer(GravityDirectionTimerHandle, this, &UOrbitDynamicObjectComponent::DirectInGravity, 0.f, true);
+		// ClearPrediction();
+		// TODO: for character, make OnEnteringGravity delegate, so its SkelMesh began to "fall" (animation variable)
+		//OnGravityChanged.Broadcast(false);
+		
+		UE_LOG(LogTemp, Log, TEXT("Entering grav field."));
+		DrawDebugSphere(GetWorld(), GetActorLocation(), 100, 4, FColor::Green, false, 2);
+	}
+}
+
+void AOrbitCharacter::OnLeavingGravityField(AActor* OverlappedActor, AActor* OtherActor)
+{
+	if (OtherActor != GravityAttractor)
+	{
+		return;
+	}
+	
+	// TODO: calculate from kepler attractor its velocity at given SimTime
+	// TODO: move into Jump() for Character
+	//UpdateOrbitalMovement(GetOwner()->GetActorLocation(), GravityAttractor->GetOrbitComponent()->GetInstantVelocity());
+	
+	GravityAttractor = nullptr;
+	//GetWorld()->GetTimerManager().ClearTimer(GravityDirectionTimerHandle);
+	
+	// TODO: call Character's switch to zerogravity controls (input mapping)
+	
+	OrbitComponent->CalculatePrediction();
+	//OnGravityChanged.Broadcast(false);
+	
+	UE_LOG(LogTemp, Log, TEXT("Leaving grav field."));
+	DrawDebugSphere(GetWorld(), GetActorLocation(), 100, 4, FColor::Orange, false, 2);
+}
+
 bool AOrbitCharacter::TryLand(double Speed)
 {
 	if (Speed <= ThrustersAcceleration)
@@ -185,7 +286,7 @@ bool AOrbitCharacter::TryLand(double Speed)
 		// GetCapsuleComponent()->SetSimulatePhysics(true);
 		GetCapsuleComponent()->SetEnableGravity(true);
 		GetCharacterMovement()->GravityScale = 1;
-		bInGravity = true;
+		bOnSurface = true;
 		ToggleInputMode(false);
 		return true;
 	}
@@ -193,26 +294,21 @@ bool AOrbitCharacter::TryLand(double Speed)
 	return false;
 }
 
-// void AOrbitCharacter::OnGravityUpdate(bool NewState)
-// {
-// 	bInGravity = NewState;
-// }
-
 void AOrbitCharacter::Jump()
 {
 	// Super::Jump();
-	if (bInGravity)
+	if (bOnSurface)
 	{
 		// GetCapsuleComponent()->SetSimulatePhysics(false);
 		GetCapsuleComponent()->SetEnableGravity(false);
 		GetCharacterMovement()->GravityScale = 0;
-		bInGravity = false;
+		bOnSurface = false;
 		ToggleInputMode(true);
 	
 		OrbitComponent->MarkAsMovable();
 		OrbitComponent->UpdateOrbitalMovement(
 			GetActorLocation(),
-			OrbitComponent->GetAttractor()->GetOrbitComponent()->GetInstantVelocity() + ThrustersAcceleration
+			GravityAttractor->GetOrbitComponent()->GetInstantVelocity() + ThrustersAcceleration
 			);
 	}
 }

@@ -7,6 +7,7 @@
 #include "orbits/Orbital/GravityAffected.h"
 #include "OrbitCharacter.generated.h"
 
+class ACelestialBody;
 struct FInputActionValue;
 class UOrbitDynamicObjectComponent;
 class UInputAction;
@@ -29,6 +30,16 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Orbit", meta = (AllowPrivateAccess = "true"))
 	UOrbitDynamicObjectComponent* OrbitComponent;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	USceneComponent* CameraRoot;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	USceneComponent* PitchPivot;
+
+	// Camera itself, rotated only for special effects
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	UCameraComponent* Camera;
+	
 	/** Move Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* MoveAction;
@@ -39,10 +50,6 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* JumpAction;
-	
-	/** Follow camera */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	UCameraComponent* Camera;
 	
 	/** MappingContext for zero gravity*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
@@ -67,7 +74,12 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Movement")
 	float ThrustersAcceleration = 10.f;
 	
-	bool bInGravity = false;
+	bool bOnSurface = false;
+	ACelestialBody* GravityAttractor = nullptr;
+	float CameraYaw = 0;
+	float CameraPitch = 0;
+	UPROPERTY(EditAnywhere, Category="Camera")
+	FName HeadSocketName = "headSocket";
 	
 public:
 	// Called every frame
@@ -77,9 +89,17 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	
 	// virtual void MoveInGravity(const FVector& Delta) override;
-	virtual void RotateToGravity(const FVector& Direction) override;
+	
+	UFUNCTION(BlueprintCallable)
 	void ToggleInputMode(bool IsLanded);
 	// void OnGravityUpdate(bool NewState);
+	
+	UFUNCTION()
+	void OnEnteringGravityField(AActor* OverlappedActor, AActor* OtherActor);
+	UFUNCTION()
+	void OnLeavingGravityField(AActor* OverlappedActor, AActor* OtherActor);
+	UFUNCTION()
+	void DirectInGravity();
 	
 	virtual bool TryLand(double Speed) override;
 	virtual void Jump() override;

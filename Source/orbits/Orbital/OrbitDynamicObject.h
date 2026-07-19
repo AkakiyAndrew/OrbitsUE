@@ -61,7 +61,6 @@ protected:
 private:
 	FPredictedData PredictedData;
 	bool bOrbitMovable = true;
-	ACelestialBody* GravityAttractor = nullptr;
 	FTimerHandle GravityDirectionTimerHandle;
 	IGravityAffected* OwnerPtr;
 	float Mass = 100.f;
@@ -102,13 +101,6 @@ public:
 	void UpdateActorPosition(const FVector& NewPos) const { GetOwner()->SetActorLocation(NewPos); };
 	// TODO: subscribe on owner's HitEvent to update orbital velocity
 	
-	UFUNCTION()
-	void OnEnteringGravityField(AActor* OverlappedActor, AActor* OtherActor);
-	UFUNCTION()
-	void OnLeavingGravityField(AActor* OverlappedActor, AActor* OtherActor);
-	UFUNCTION()
-	void DirectInGravity();
-	ACelestialBody* GetAttractor() const { return GravityAttractor; };
 	FGravityChanged OnGravityChanged;
 	void MarkAsMovable() { bOrbitMovable = true; }; // CalculatePrediction(); };
 	
