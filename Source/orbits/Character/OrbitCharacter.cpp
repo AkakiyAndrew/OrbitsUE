@@ -58,6 +58,8 @@ void AOrbitCharacter::BeginPlay()
 	ToggleInputMode(bOnSurface);
 	CameraYaw = CameraRoot->GetRelativeRotation().Yaw;
 	CameraPitch = PitchPivot->GetRelativeRotation().Pitch;
+	
+	CameraRoot->SetRelativeLocation(GetMesh()->GetSocketTransform(HeadSocketName, RTS_Actor).GetLocation());
 }
 
 // Called every frame
@@ -146,17 +148,32 @@ void AOrbitCharacter::Look(const FInputActionValue& Value)
 	if (Controller != nullptr)
 	{
 		CameraYaw += LookAxisVector.X; // * Sensitivity;
-
 		CameraPitch += LookAxisVector.Y; // * Sensitivity;
-		if (bOnSurface)
+		
+		if (GravityAttractor)
+		{
 			CameraPitch = FMath::Clamp(CameraPitch, -89.f, 89.f);
+			// rotate camera up-down 
+			PitchPivot->SetRelativeRotation(FRotator(CameraPitch, 0, 0));
+			// rotate whole actor left-right when on surface by Camera movement
+			AddActorLocalRotation({0, LookAxisVector.X, 0}); 
+			//CameraRoot->SetRelativeRotation(FRotator(0, CameraYaw, 0)); // only camera, not actor
+		}
 		
-		CameraRoot->SetRelativeRotation(FRotator(0, CameraYaw, 0));
-		PitchPivot->SetRelativeRotation(FRotator(CameraPitch, 0, 0));
-		AddActorLocalRotation({0, 0, LookAxisVector.Z});
+		// zero-grav, rotate whole actor
+		if (!bOnSurface)
+		{
+			AddActorLocalRotation({LookAxisVector.Y, LookAxisVector.X, 0});
+			AddActorLocalRotation({0, 0, LookAxisVector.Z});
+		}
+		// need for proper z-grav movement
+		Controller->SetControlRotation(Camera->GetComponentRotation());
 		
-		
-		// if (bOnSurface)
+		// else
+		// {
+		// 	// if not on surface - just rotate whole character instead of Camera or other components
+		// }
+			
 		// {
 		// add yaw and pitch input to controller
 		// AddControllerYawInput(LookAxisVector.X);
@@ -262,6 +279,12 @@ void AOrbitCharacter::OnLeavingGravityField(AActor* OverlappedActor, AActor* Oth
 	{
 		return;
 	}
+	
+	// reset camera back to "look forward"
+	CameraYaw = 0;
+	CameraPitch = 0;
+	CameraRoot->SetRelativeRotation(FRotator(0, CameraYaw, 0));
+	PitchPivot->SetRelativeRotation(FRotator(CameraPitch, 0, 0));
 	
 	// TODO: calculate from kepler attractor its velocity at given SimTime
 	// TODO: move into Jump() for Character
